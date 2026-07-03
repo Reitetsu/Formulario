@@ -1,0 +1,525 @@
+<section class="row g-4">
+  <div class="col-12">
+    <div class="glass-card p-4">
+      <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+        <div>
+          <h1 class="section-title">{{ campaniaDetalle ? 'Campaña : ' + (campaniaDetalle.nombreCampania || '-') : 'Campanias' }}</h1>
+          <p class="section-copy">
+            @if (campaniaDetalle) {
+              {{ campaniaDetalle.descripcion || 'Consulta el modulo operativo de la campaña seleccionada.' }}
+            } @else {
+              Administra campanias y consulta su programacion real basada en tiendas, fechas y SKU.
+            }
+          </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          @if (!campaniaDetalle) {
+            <button type="button" class="btn btn-outline-secondary" [disabled]="!campaniaSeleccionada" (click)="openCampaniaDetalle()">Ver detalle</button>
+            <button type="button" class="btn btn-outline-secondary" (click)="load(pagedResult.pageNumber)">Recargar</button>
+          } @else {
+            <button type="button" class="btn btn-outline-secondary" (click)="volverAlListado()">Regresar</button>
+            <button type="button" class="btn btn-outline-secondary" (click)="reloadWorkspace()">Recargar modulo</button>
+            <button type="button" class="btn btn-outline-secondary" (click)="openActionPanel('tiendas')">Agregar tiendas</button>
+            <button type="button" class="btn btn-outline-secondary" (click)="openActionPanel('fechas')">Administrar fechas</button>
+            <button type="button" class="btn btn-brand" (click)="openActionPanel('skus')">Agregar SKU</button>
+          }
+        </div>
+      </div>
+
+      @if (!campaniaDetalle) {
+        <form [formGroup]="filtersForm" class="row g-3 align-items-end" (ngSubmit)="search()">
+          <div class="col-md-4">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" formControlName="nombreCampania">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Descripcion</label>
+            <input type="text" class="form-control" formControlName="descripcion">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Estado</label>
+            <input type="text" class="form-control" formControlName="estado">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Tamano pagina</label>
+            <select class="form-select" formControlName="pageSize">
+              <option [value]="10">10</option>
+              <option [value]="25">25</option>
+              <option [value]="50">50</option>
+            </select>
+          </div>
+
+          <div class="col-12 d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-brand">Buscar</button>
+            <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()">Limpiar</button>
+          </div>
+        </form>
+      } @else {
+        <form [formGroup]="workspaceFiltersForm" class="row g-3 align-items-end">
+          @if (tabActiva === 'tiendas') {
+            <div class="col-md-4">
+              <label class="form-label">Tienda</label>
+              <input type="text" class="form-control" formControlName="tienda" placeholder="Nombre, codigo o tienda Bimbo">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Cadena</label>
+              <input type="text" class="form-control" formControlName="cadena" placeholder="Cadena, formato o region">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fecha</label>
+              <input type="date" class="form-control" formControlName="fecha">
+            </div>
+          } @else {
+            <div class="col-md-4">
+              <label class="form-label">SKU</label>
+              <input type="text" class="form-control" formControlName="sku" placeholder="Codigo o nombre SKU Bimbo">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Marca</label>
+              <input type="text" class="form-control" formControlName="marca" placeholder="Marca o area">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Categoria</label>
+              <input type="text" class="form-control" formControlName="categoria" placeholder="Categoria o unidad de negocio">
+            </div>
+          }
+        </form>
+      }
+    </div>
+  </div>
+
+  @if (!campaniaDetalle) {
+    <div class="col-xl-7">
+      <div class="glass-card p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3 gap-3">
+          <div>
+            <h2 class="h4 mb-1">Listado de campanias</h2>
+            <p class="section-copy">Haz clic sobre una fila para posicionarte en la campaña y habilitar <strong>Ver detalle</strong>.</p>
+          </div>
+          @if (campaniaSeleccionada) {
+            <div class="selected-badge">
+              Seleccionada: <strong>{{ campaniaSeleccionada.nombreCampania || campaniaSeleccionada.campaniaId }}</strong>
+            </div>
+          }
+        </div>
+
+        @if (loading) {
+          <div class="muted-empty">Cargando campanias...</div>
+        } @else if (pagedResult.items.length === 0) {
+          <div class="muted-empty">No hay resultados para los filtros aplicados.</div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Id</th>
+                  <th>Campania</th>
+                  <th>Estado</th>
+                  <th>Vigencia</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of pagedResult.items; track item.campaniaId) {
+                  <tr
+                    class="campaign-row"
+                    [class.selected-row]="isSelectedCampania(item)"
+                    (click)="selectCampania(item)"
+                  >
+                    <td>{{ item.campaniaId }}</td>
+                    <td>
+                      <div class="fw-semibold">{{ item.nombreCampania || '-' }}</div>
+                      <small class="text-secondary">{{ item.descripcion || 'Sin descripcion' }}</small>
+                    </td>
+                    <td>{{ item.estado || '-' }}</td>
+                    <td>
+                      <div>{{ formatDate(item.fechaInicio) }}</div>
+                      <small class="text-secondary">{{ formatDate(item.fechaFin) }}</small>
+                    </td>
+                    <td class="text-end">
+                      <div class="d-inline-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" (click)="startEdit(item); $event.stopPropagation()">Editar</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" (click)="delete(item); $event.stopPropagation()">Eliminar</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <app-pagination
+          [pageNumber]="pagedResult.pageNumber"
+          [totalPages]="pagedResult.totalPages"
+          [totalCount]="pagedResult.totalCount"
+          (pageChange)="load($event)"
+        ></app-pagination>
+      </div>
+    </div>
+
+    <div class="col-xl-5">
+      <div class="glass-card p-4 h-100">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+          <div>
+            <h2 class="h4 mb-1">{{ isEditing ? 'Editar campania' : 'Nueva campania' }}</h2>
+            <p class="section-copy">Mantiene la informacion base de la campania. La gestion detallada se abre desde el listado.</p>
+          </div>
+          @if (isEditing) {
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelEdit()">Cancelar</button>
+          }
+        </div>
+
+        <form [formGroup]="editorForm" class="row g-3" (ngSubmit)="submit()">
+          <div class="col-12">
+            <label class="form-label">CampaniaId</label>
+            <input type="number" class="form-control" formControlName="campaniaId">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Nombre Campania</label>
+            <input type="text" class="form-control" formControlName="nombreCampania">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Descripcion</label>
+            <textarea rows="3" class="form-control" formControlName="descripcion"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Fecha Inicio</label>
+            <input type="date" class="form-control" formControlName="fechaInicio">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Fecha Fin</label>
+            <input type="date" class="form-control" formControlName="fechaFin">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Estado</label>
+            <input type="text" class="form-control" formControlName="estado">
+          </div>
+
+          <div class="col-12 d-grid">
+            <button type="submit" class="btn btn-brand" [disabled]="saving">
+              {{ saving ? 'Guardando...' : (isEditing ? 'Actualizar campania' : 'Crear campania') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  } @else {
+    <div class="col-12">
+      <div class="glass-card workspace-shell p-4">
+        @if (cargandoWorkspace) {
+          <div class="muted-empty">Cargando modulo de campania...</div>
+        } @else {
+          <div class="workspace-hero mb-4">
+            <div>
+              <div class="workspace-kicker">Modulo de campania</div>
+              <h2 class="workspace-title">Resumen operativo</h2>
+              <p class="section-copy mb-0">
+                {{ campaniaDetalle.descripcion || 'Sin descripcion' }}<br>
+                Vigencia: {{ formatDate(campaniaDetalle.fechaInicio) }} a {{ formatDate(campaniaDetalle.fechaFin) }}
+              </p>
+            </div>
+          </div>
+
+          <div class="summary-grid mb-4">
+            <div class="summary-card">
+              <div class="summary-label">Tiendas</div>
+              <div class="summary-value">{{ resumen?.cantidadTiendas ?? 0 }}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Fechas</div>
+              <div class="summary-value">{{ resumen?.cantidadFechas ?? 0 }}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">SKU</div>
+              <div class="summary-value">{{ resumen?.cantidadSkus ?? 0 }}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Programadas</div>
+              <div class="summary-value">{{ resumen?.cantidadProgramacionesProgramadas ?? 0 }}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Ejecutadas</div>
+              <div class="summary-value">{{ resumen?.cantidadProgramacionesEjecutadas ?? 0 }}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Canceladas</div>
+              <div class="summary-value">{{ resumen?.cantidadProgramacionesCanceladas ?? 0 }}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Detalles</div>
+              <div class="summary-value">{{ resumen?.cantidadDetalles ?? 0 }}</div>
+            </div>
+          </div>
+
+          <div class="workspace-grid">
+            <div class="workspace-main">
+              <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+                <div class="tab-group">
+                  <button
+                    type="button"
+                    class="tab-button"
+                    [class.active]="tabActiva === 'tiendas'"
+                    (click)="changeTab('tiendas')"
+                  >
+                    Tiendas
+                  </button>
+                  <button
+                    type="button"
+                    class="tab-button"
+                    [class.active]="tabActiva === 'skus'"
+                    (click)="changeTab('skus')"
+                  >
+                    SKU
+                  </button>
+                </div>
+              </div>
+
+              @if (tabActiva === 'tiendas') {
+                @if (filteredTiendas().length === 0) {
+                  <div class="muted-empty">No hay tiendas asociadas a la campania seleccionada.</div>
+                } @else {
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>Tienda</th>
+                          <th>Cadena</th>
+                          <th>Region</th>
+                          <th>Fechas</th>
+                          <th>Estados</th>
+                          <th class="text-end">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (item of filteredTiendas(); track item.tiendaCadenaKey) {
+                          <tr>
+                            <td>
+                              <div class="fw-semibold">{{ item.nombreTiendaBimbo || item.nombreTienda || item.tiendaCadenaKey }}</div>
+                              <small class="text-secondary">{{ item.codigoTiendaB2B || item.tiendaCadenaKey }}</small>
+                            </td>
+                            <td>{{ item.cadena || '-' }}</td>
+                            <td>{{ item.region || '-' }}</td>
+                            <td>
+                              <div>{{ item.cantidadFechas }}</div>
+                              <small class="text-secondary">{{ formatDate(item.primeraFecha) }} a {{ formatDate(item.ultimaFecha) }}</small>
+                            </td>
+                            <td>
+                              <small class="text-secondary">
+                                P: {{ item.cantidadProgramadas }} | E: {{ item.cantidadEjecutadas }} | C: {{ item.cantidadCanceladas }}
+                              </small>
+                            </td>
+                            <td class="text-end">
+                              <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeTienda(item)">
+                                Retirar
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              } @else {
+                @if (filteredSkus().length === 0) {
+                  <div class="muted-empty">No hay SKU asociados a la campania seleccionada.</div>
+                } @else {
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>SKU Bimbo</th>
+                          <th>Descripcion</th>
+                          <th>Marca</th>
+                          <th>Categoria</th>
+                          <th>Cobertura</th>
+                          <th class="text-end">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (item of filteredSkus(); track item.codigoSkuBimbo) {
+                          <tr>
+                            <td>
+                              <div class="fw-semibold">{{ item.codigoSkuBimbo }}</div>
+                              <small class="text-secondary">{{ item.codigoSkuB2B || '-' }}</small>
+                            </td>
+                            <td>
+                              <div>{{ item.nombreSkuBimbo || '-' }}</div>
+                              <small class="text-secondary">{{ item.nombreSkuB2B || '-' }}</small>
+                            </td>
+                            <td>{{ item.marca || '-' }}</td>
+                            <td>{{ item.categoria || '-' }}</td>
+                            <td>
+                              <div>{{ item.cantidadProgramaciones }} programaciones</div>
+                              <small class="text-secondary">{{ item.cantidadTiendas }} tiendas | {{ item.cantidadFechas }} fechas</small>
+                            </td>
+                            <td class="text-end">
+                              <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeSku(item)">
+                                Retirar
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              }
+            </div>
+
+            <div class="workspace-side">
+              <div class="side-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h3 class="h5 mb-1">Fechas derivadas</h3>
+                    <p class="section-copy mb-0">Se calculan a partir de Programacion.</p>
+                  </div>
+                </div>
+
+                @if (filteredFechas().length === 0) {
+                  <div class="muted-empty compact">No hay fechas registradas.</div>
+                } @else {
+                  <div class="table-responsive compact-table">
+                    <table class="table table-sm align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Tiendas</th>
+                          <th>SKU</th>
+                          <th class="text-end">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (item of filteredFechas(); track item.fecha) {
+                          <tr>
+                            <td>{{ formatDate(item.fecha) }}</td>
+                            <td>{{ item.cantidadTiendas }}</td>
+                            <td>{{ item.cantidadSkus }}</td>
+                            <td class="text-end">
+                              <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeFecha(item)">
+                                Retirar
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+
+              <div class="side-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h3 class="h5 mb-1">Programaciones</h3>
+                    <p class="section-copy mb-0">Selecciona una fila para ver sus SKU.</p>
+                  </div>
+                </div>
+
+                @if (filteredProgramaciones().length === 0) {
+                  <div class="muted-empty compact">No hay programaciones para la campania seleccionada.</div>
+                } @else {
+                  <div class="programaciones-list">
+                    @for (item of filteredProgramaciones(); track item.programacionId) {
+                      <button
+                        type="button"
+                        class="programacion-item"
+                        [class.active]="isSelectedProgramacion(item)"
+                        (click)="showProgramacionDetails(item)"
+                      >
+                        <div class="d-flex justify-content-between gap-2">
+                          <span class="fw-semibold">{{ item.nombreTiendaBimbo || item.tiendaCadenaKey }}</span>
+                          <span class="status-chip" [ngClass]="getEstadoClass(item.estadoFuncional)">{{ item.estadoFuncional }}</span>
+                        </div>
+                        <small class="text-secondary">
+                          {{ formatDate(item.fecha) }} | {{ item.cantidadSkus }} SKU | {{ item.estadoPersistido }}
+                        </small>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h3 class="h5 mb-1">Detalle de programacion</h3>
+                <p class="section-copy mb-0">
+                  @if (selectedProgramacionId) {
+                    Programacion seleccionada: {{ selectedProgramacionId }}
+                  } @else {
+                    Selecciona una programacion para ver sus SKU asociados.
+                  }
+                </p>
+              </div>
+            </div>
+
+            @if (cargandoDetalles) {
+              <div class="muted-empty">Cargando detalle de la programacion...</div>
+            } @else if (!selectedProgramacionId) {
+              <div class="muted-empty">Aun no has seleccionado una programacion.</div>
+            } @else if (detallesProgramacion.length === 0) {
+              <div class="muted-empty">La programacion seleccionada no tiene detalle.</div>
+            } @else {
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Detalle Id</th>
+                      <th>Codigo SKU Bimbo</th>
+                      <th>Codigo SKU B2B</th>
+                      <th>Nombre SKU Bimbo</th>
+                      <th>Marca</th>
+                      <th>Categoria</th>
+                      <th>Fecha Creacion</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of detallesProgramacion; track item.detalleProgramacionId) {
+                      <tr>
+                        <td>{{ item.detalleProgramacionId }}</td>
+                        <td>{{ item.codigoSkuBimbo }}</td>
+                        <td>{{ item.codigoSkuB2B || '-' }}</td>
+                        <td>{{ item.nombreSkuBimbo || '-' }}</td>
+                        <td>{{ item.marca || '-' }}</td>
+                        <td>{{ item.categoria || '-' }}</td>
+                        <td>{{ formatDate(item.fechaCreacion) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>
+
+@if (campaniaDetalle && accionActiva === 'tiendas') {
+  <app-add-tiendas-dialog
+    [fechasDisponibles]="fechas"
+    (closed)="closeActionPanel()"
+    (saved)="handleTiendasDialogSave($event)"
+  ></app-add-tiendas-dialog>
+}
+
+@if (campaniaDetalle && accionActiva === 'fechas') {
+  <app-manage-fechas-dialog
+    [fechasActuales]="fechas"
+    [tiendasDisponibles]="tiendas"
+    (closed)="closeActionPanel()"
+    (saved)="handleFechasDialogSave($event)"
+  ></app-manage-fechas-dialog>
+}
+
+@if (campaniaDetalle && accionActiva === 'skus') {
+  <app-add-skus-dialog
+    [codigosExistentes]="skus.map(item => item.codigoSkuBimbo)"
+    (closed)="closeActionPanel()"
+    (saved)="handleSkusDialogSave($event)"
+  ></app-add-skus-dialog>
+}

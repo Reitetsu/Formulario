@@ -1,0 +1,111 @@
+<div class="dialog-backdrop" (click)="close()"></div>
+<section class="dialog-card" aria-modal="true" role="dialog">
+  <div class="dialog-header">
+    <div>
+      <h3 class="dialog-title">Administrar fechas</h3>
+      <p class="dialog-copy">Agrega nuevas fechas y decide si aplican a todas las tiendas activas o a una seleccion especifica.</p>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="close()">Cerrar</button>
+  </div>
+
+  <div class="dialog-body">
+    <div class="dialog-main" [formGroup]="optionsForm">
+      <div class="mb-3">
+        <label class="form-label">Fechas nuevas</label>
+        <textarea rows="4" class="form-control" formControlName="fechasTexto" placeholder="2026-06-27&#10;2026-06-28"></textarea>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <div class="form-check">
+            <input id="dialog-aplicar-todas" type="checkbox" class="form-check-input" formControlName="aplicarATodasLasTiendas">
+            <label class="form-check-label" for="dialog-aplicar-todas">Aplicar a todas las tiendas activas</label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-check">
+            <input id="dialog-replicar-skus-fechas" type="checkbox" class="form-check-input" formControlName="replicarSkusExistentes">
+            <label class="form-check-label" for="dialog-replicar-skus-fechas">Replicar SKU existentes</label>
+          </div>
+        </div>
+      </div>
+
+      @if (!optionsForm.value.aplicarATodasLasTiendas) {
+        <div class="side-card">
+          <div class="mb-3">
+            <label class="form-label">Buscar tienda</label>
+            <input type="text" class="form-control" formControlName="search" placeholder="Nombre, cadena o region">
+          </div>
+
+          <div class="d-flex gap-2 mb-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="selectFiltered(true)">Seleccionar visibles</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="selectFiltered(false)">Limpiar visibles</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearSelection()">Limpiar todo</button>
+          </div>
+
+          <div class="selected-summary">
+            @for (item of selectedPreview(); track item) {
+              <span class="selection-chip">{{ item }}</span>
+            }
+            @if (selectedKeys().size > 6) {
+              <span class="selection-chip more-chip">+{{ selectedKeys().size - 6 }}</span>
+            }
+          </div>
+
+          <div class="stores-list">
+            @for (item of filteredTiendas(); track item.tiendaCadenaKey) {
+              <label class="store-option">
+                <input type="checkbox" class="form-check-input" [checked]="isSelected(item.tiendaCadenaKey)" (change)="toggleTienda(item.tiendaCadenaKey)">
+                <span>
+                  <strong>{{ item.nombreTiendaBimbo || item.tiendaCadenaKey }}</strong><br>
+                  <small class="text-secondary">{{ item.cadena || '-' }} | {{ item.region || '-' }}</small>
+                </span>
+              </label>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <aside class="dialog-side">
+      <div class="side-card">
+        <h4 class="h6 mb-3">Fechas actuales</h4>
+        @if (fechasActuales.length === 0) {
+          <div class="muted-empty compact">No hay fechas derivadas para esta campania.</div>
+        } @else {
+          <div class="dates-list">
+            @for (item of fechasActuales; track item.fecha) {
+              <div class="date-chip">
+                <span>{{ item.fecha }}</span>
+                <small>{{ item.cantidadTiendas }} tiendas</small>
+              </div>
+            }
+          </div>
+        }
+      </div>
+      <div class="side-card">
+        <h4 class="h6 mb-3">Fechas a registrar</h4>
+        @if (parsedFechas().length === 0) {
+          <div class="muted-empty compact">Aun no has escrito fechas validas.</div>
+        } @else {
+          <div class="dates-list">
+            @for (item of parsedFechas(); track item) {
+              <div class="date-chip">
+                <span>{{ item }}</span>
+                <small>Nueva</small>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </aside>
+  </div>
+
+  <div class="dialog-footer">
+    <span class="text-secondary">Tiendas objetivo: {{ optionsForm.value.aplicarATodasLasTiendas ? 'todas' : selectedKeys().size }}</span>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="close()">Cancelar</button>
+      <button type="button" class="btn btn-brand" [disabled]="!canSubmit()" (click)="submit()">Agregar fechas</button>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,113 @@
+<div class="dialog-backdrop" (click)="close()"></div>
+<section class="dialog-card" aria-modal="true" role="dialog">
+  <div class="dialog-header">
+    <div>
+      <h3 class="dialog-title">Agregar SKU</h3>
+      <p class="dialog-copy">Consulta la maestra agrupada por Codigo SKU Bimbo y selecciona los registros que quieres anexar.</p>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="close()">Cerrar</button>
+  </div>
+
+  <div class="dialog-body">
+    <form [formGroup]="filtersForm" class="row g-3 align-items-end" (ngSubmit)="search()">
+      <div class="col-md-4">
+        <label class="form-label">Nombre</label>
+        <input type="text" class="form-control" formControlName="nombre">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Marca</label>
+        <input type="text" class="form-control" formControlName="marca">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Categoria</label>
+        <input type="text" class="form-control" formControlName="categoria">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Tamano</label>
+        <select class="form-select" formControlName="pageSize">
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Codigo SKU Bimbo</label>
+        <input type="text" class="form-control" formControlName="codigoSkuBimbo" placeholder="Buscar por codigo Bimbo">
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-brand">Buscar</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="toggleCurrentPage(true)">Seleccionar pagina</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="toggleCurrentPage(false)">Limpiar pagina</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="clearSelection()">Limpiar todo</button>
+      </div>
+    </form>
+
+    @if (selectedCodes.size > 0) {
+      <div class="selected-summary">
+        @for (item of selectedPreview(); track item) {
+          <span class="selection-chip">{{ item }}</span>
+        }
+        @if (selectedCodes.size > 8) {
+          <span class="selection-chip more-chip">+{{ selectedCodes.size - 8 }}</span>
+        }
+      </div>
+    }
+
+    @if (loading) {
+      <div class="muted-empty">Cargando catalogo SKU...</div>
+    } @else if (pagedResult.items.length === 0) {
+      <div class="muted-empty">No se encontraron SKU para los filtros aplicados.</div>
+    } @else {
+      <div class="table-responsive dialog-table">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Codigo SKU Bimbo</th>
+              <th>Codigo SKU B2B</th>
+              <th>Nombre</th>
+              <th>Marca</th>
+              <th>Categoria</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of pagedResult.items; track item.codigoSkuBimbo) {
+              <tr (click)="toggleSku(item)" class="selectable-row" [class.disabled-row]="isDisabled(item.codigoSkuBimbo)">
+                <td>
+                  <input type="checkbox" class="form-check-input" [checked]="isSelected(item.codigoSkuBimbo)" [disabled]="isDisabled(item.codigoSkuBimbo)">
+                </td>
+                <td>
+                  <div class="fw-semibold">{{ item.codigoSkuBimbo }}</div>
+                </td>
+                <td>
+                  {{ item.codigoSkuB2B || '-' }}
+                </td>
+                <td>
+                  <div>{{ item.nombreSkuBimbo || '-' }}</div>
+                  <small class="text-secondary">{{ item.nombreSkuB2B || '-' }}</small>
+                </td>
+                <td>{{ item.marca || '-' }}</td>
+                <td>{{ item.categoria || '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <app-pagination
+        [pageNumber]="pagedResult.pageNumber"
+        [totalPages]="pagedResult.totalPages"
+        [totalCount]="pagedResult.totalCount"
+        (pageChange)="load($event)"
+      ></app-pagination>
+    }
+  </div>
+
+  <div class="dialog-footer">
+    <small class="text-secondary">SKU seleccionados: {{ selectedCodes.size }}</small>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="close()">Cancelar</button>
+      <button type="button" class="btn btn-brand" [disabled]="!canSubmit()" (click)="submit()">Agregar SKU</button>
+    </div>
+  </div>
+</section>

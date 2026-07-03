@@ -1,0 +1,161 @@
+<div class="dialog-backdrop" (click)="close()"></div>
+<section class="dialog-card" aria-modal="true" role="dialog">
+  <div class="dialog-header">
+    <div>
+      <h3 class="dialog-title">Agregar tiendas</h3>
+      <p class="dialog-copy">Selecciona tiendas de la maestra y define las fechas que aplicaran a la campania.</p>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="close()">Cerrar</button>
+  </div>
+
+  <div class="dialog-body">
+    <div class="dialog-main">
+      <form [formGroup]="filtersForm" class="row g-3 align-items-end" (ngSubmit)="search()">
+        <div class="col-md-4">
+          <label class="form-label">Nombre</label>
+          <input type="text" class="form-control" formControlName="nombre">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Cadena</label>
+          <input type="text" class="form-control" formControlName="cadena">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Region</label>
+          <input type="text" class="form-control" formControlName="region">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Tamano</label>
+          <select class="form-select" formControlName="pageSize">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Codigo B2B</label>
+          <input type="text" class="form-control" formControlName="codigoTiendaB2B">
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button type="submit" class="btn btn-brand">Buscar</button>
+          <button type="button" class="btn btn-outline-secondary" (click)="toggleCurrentPage(true)">Seleccionar pagina</button>
+          <button type="button" class="btn btn-outline-secondary" (click)="toggleCurrentPage(false)">Limpiar pagina</button>
+          <button type="button" class="btn btn-outline-secondary" (click)="clearSelection()">Limpiar todo</button>
+        </div>
+      </form>
+
+      @if (loading) {
+        <div class="muted-empty">Cargando tiendas...</div>
+      } @else if (pagedResult.items.length === 0) {
+        <div class="muted-empty">No se encontraron tiendas para los filtros aplicados.</div>
+      } @else {
+        <div class="table-responsive dialog-table">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Tienda</th>
+                <th>Cadena</th>
+                <th>Region</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of pagedResult.items; track item.tiendaCadenaKey) {
+                <tr (click)="toggleTienda(item)" class="selectable-row">
+                  <td>
+                    <input type="checkbox" class="form-check-input" [checked]="isSelected(item)">
+                  </td>
+                  <td>
+                    <div class="fw-semibold">{{ item.nombreTiendaBimbo || item.nombreTienda || item.tiendaCadenaKey }}</div>
+                    <small class="text-secondary">{{ item.tiendaCadenaKey }} | {{ item.codigoTiendaB2B || '-' }}</small>
+                  </td>
+                  <td>{{ item.cadena || '-' }}</td>
+                  <td>{{ item.region || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <app-pagination
+          [pageNumber]="pagedResult.pageNumber"
+          [totalPages]="pagedResult.totalPages"
+          [totalCount]="pagedResult.totalCount"
+          (pageChange)="load($event)"
+        ></app-pagination>
+      }
+    </div>
+
+    <aside class="dialog-side">
+      <div class="side-card">
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+          <h4 class="h6 mb-0">Fechas actuales</h4>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleAllFechas(true)">Todas</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleAllFechas(false)">Limpiar</button>
+          </div>
+        </div>
+        @if (fechasDisponibles.length === 0) {
+          <div class="muted-empty compact">La campania aun no tiene fechas derivadas.</div>
+        } @else {
+          <div class="dates-list">
+            @for (item of fechasDisponibles; track item.fecha) {
+              <label class="date-option">
+                <input type="checkbox" class="form-check-input" [checked]="isFechaSelected(item.fecha)" (change)="toggleFecha(item.fecha)">
+                <span>{{ item.fecha }}</span>
+              </label>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="side-card" [formGroup]="optionsForm">
+        <div class="mb-3">
+          <label class="form-label">Tiendas seleccionadas</label>
+          @if (selectedKeys.size === 0) {
+            <div class="muted-empty compact">Aun no has seleccionado tiendas.</div>
+          } @else {
+            <div class="selected-preview">
+              @for (item of selectedPreview(); track item) {
+                <span class="selection-chip">{{ item }}</span>
+              }
+              @if (selectedKeys.size > 6) {
+                <span class="selection-chip more-chip">+{{ selectedKeys.size - 6 }}</span>
+              }
+            </div>
+          }
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Fechas incluidas</label>
+          @if (selectedFechas.size === 0 && parsedManualFechas().length === 0) {
+            <div class="muted-empty compact">No se han definido fechas para esta operacion.</div>
+          } @else {
+            <div class="selected-preview">
+              @for (item of selectedFechasPreview(); track item) {
+                <span class="selection-chip">{{ item }}</span>
+              }
+              @for (item of parsedManualFechas(); track item) {
+                <span class="selection-chip more-chip">{{ item }}</span>
+              }
+            </div>
+          }
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Fechas nuevas u opcionales</label>
+          <textarea rows="4" class="form-control" formControlName="fechasTexto" placeholder="2026-06-27&#10;2026-06-28"></textarea>
+        </div>
+        <div class="form-check">
+          <input id="dialog-replicar-skus-tiendas" type="checkbox" class="form-check-input" formControlName="replicarSkusExistentes">
+          <label class="form-check-label" for="dialog-replicar-skus-tiendas">Replicar SKU existentes</label>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="dialog-footer">
+    <small class="text-secondary">Tiendas seleccionadas: {{ selectedKeys.size }}</small>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="close()">Cancelar</button>
+      <button type="button" class="btn btn-brand" [disabled]="!canSubmit()" (click)="submit()">Agregar tiendas</button>
+    </div>
+  </div>
+</section>

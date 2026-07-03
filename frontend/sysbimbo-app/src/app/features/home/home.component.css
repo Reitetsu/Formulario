@@ -1,0 +1,11 @@
+.spotlight-card {
+  background: linear-gradient(135deg, rgba(34, 84, 61, 0.95), rgba(23, 61, 44, 0.88));
+  border-radius: 24px;
+  color: #fff;
+}
+
+.home-list {
+  display: grid;
+  gap: 0.9rem;
+  padding-left: 1.2rem;
+}

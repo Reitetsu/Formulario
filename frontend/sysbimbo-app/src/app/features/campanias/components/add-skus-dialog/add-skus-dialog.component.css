@@ -1,0 +1,89 @@
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 30;
+}
+
+.dialog-card {
+  position: fixed;
+  inset: 6vh 6vw;
+  z-index: 31;
+  background: #fffdf8;
+  border-radius: 1.5rem;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.2);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+}
+
+.dialog-header,
+.dialog-footer {
+  padding: 1.25rem 1.5rem;
+}
+
+.dialog-header {
+  border-bottom: 1px solid rgba(31, 41, 55, 0.08);
+}
+
+.dialog-footer {
+  border-top: 1px solid rgba(31, 41, 55, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dialog-title {
+  margin: 0;
+}
+
+.dialog-copy {
+  margin: 0.35rem 0 0;
+  color: var(--text-soft);
+}
+
+.dialog-body {
+  padding: 1.5rem;
+  min-height: 0;
+}
+
+.dialog-table {
+  max-height: 440px;
+  overflow: auto;
+}
+
+.selected-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.selection-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(31, 41, 55, 0.08);
+  font-size: 0.85rem;
+}
+
+.more-chip {
+  background: rgba(22, 101, 52, 0.14);
+  color: #166534;
+}
+
+.selectable-row {
+  cursor: pointer;
+}
+
+.disabled-row {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 991px) {
+  .dialog-card {
+    inset: 3vh 3vw;
+  }
+}

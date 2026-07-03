@@ -1,0 +1,30 @@
+<div class="page-shell">
+  <header class="container py-4">
+    <nav class="glass-card navbar navbar-expand-lg px-4 py-3">
+      <div class="container-fluid px-0">
+        <a routerLink="/" class="navbar-brand brand-mark">Sysbimbo</a>
+
+        <div class="d-flex flex-wrap gap-2">
+          <a
+            routerLink="/"
+            routerLinkActive="active-link"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-pill"
+          >
+            Inicio
+          </a>
+          <a routerLink="/tiendas" routerLinkActive="active-link" class="nav-pill">Tiendas</a>
+          <a routerLink="/skus" routerLinkActive="active-link" class="nav-pill">SKUs</a>
+          <a routerLink="/campanias" routerLinkActive="active-link" class="nav-pill">Campanias</a>
+          <a routerLink="/cuotas" routerLinkActive="active-link" class="nav-pill">Cuotas</a>
+          <a routerLink="/programaciones" routerLinkActive="active-link" class="nav-pill">Programaciones</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container pb-5">
+    <app-alert-banner></app-alert-banner>
+    <router-outlet></router-outlet>
+  </main>
+</div>

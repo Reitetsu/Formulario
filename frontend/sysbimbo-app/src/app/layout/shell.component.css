@@ -1,0 +1,25 @@
+.brand-mark {
+  color: var(--brand-strong);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.nav-pill {
+  border-radius: 999px;
+  color: var(--text-soft);
+  padding: 0.55rem 1rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.nav-pill:hover {
+  background: rgba(34, 84, 61, 0.08);
+  color: var(--brand-strong);
+}
+
+.active-link {
+  background: var(--brand);
+  color: #fff;
+}

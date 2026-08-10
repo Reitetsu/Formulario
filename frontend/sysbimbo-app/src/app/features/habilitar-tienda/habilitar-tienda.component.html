@@ -1,0 +1,223 @@
+<main class="noir-page">
+  <section class="form-shell">
+    <header class="form-header">
+      <span class="brand-seal">SB</span>
+      <div>
+        <span class="eyebrow">Registro de impulso</span>
+        <h1>Control de material</h1>
+      </div>
+    </header>
+
+    <div class="steps" aria-label="Progreso del formulario">
+      <span class="active"><b>1</b> Ubicacion</span>
+      <i></i>
+      <span [class.active]="materialSearched"><b>2</b> Material</span>
+      <i></i>
+      <span [class.active]="photoMessage"><b>3</b> Evidencia</span>
+    </div>
+
+    <section class="panel location-panel" [class.location-panel--compact]="selectedTienda">
+      @if (selectedTienda) {
+        <div class="selected-store selected-store--summary">
+          <span class="check">&#10003;</span>
+          <strong>{{ storeLabel(selectedTienda) }}</strong>
+          <button type="button" class="change-store" aria-label="Cambiar tienda" title="Cambiar tienda" (click)="clearSelection()">
+            &times;
+          </button>
+        </div>
+      } @else {
+        <div class="panel-title">
+          <span>01</span>
+          <div>
+            <h2>Selecciona la tienda</h2>
+            <p>Primero elige la marca y luego busca el local.</p>
+          </div>
+        </div>
+
+        <div class="field-grid">
+          <div class="field-group">
+            <label for="marca">Marca</label>
+            <div class="select-wrap">
+              <select id="marca" [formControl]="marcaControl">
+                <option value="">Seleccionar marca</option>
+                @for (marca of marcas; track marca) {
+                  <option [value]="marca">{{ marca }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="field-group store-field">
+            <label for="tienda-search">Tienda</label>
+            <div class="store-search-row">
+              <div class="combobox-wrap">
+                <span class="search-icon" aria-hidden="true"></span>
+                <input
+                  id="tienda-search"
+                  type="text"
+                  role="combobox"
+                  autocomplete="off"
+                  placeholder="Buscar nombre de tienda..."
+                  [formControl]="tiendaSearch"
+                  [disabled]="!marcaControl.value"
+                  [attr.aria-expanded]="dropdownOpen"
+                  aria-controls="tienda-options"
+                  (focus)="openDropdown()"
+                  (blur)="closeDropdown()"
+                >
+
+                @if (tiendaSearch.value) {
+                  <button type="button" class="clear-button" aria-label="Limpiar tienda" (click)="clearSelection()">&times;</button>
+                }
+
+                @if (dropdownOpen) {
+                  <div id="tienda-options" class="options-panel" role="listbox">
+                    @if (loadingStores) {
+                      <div class="option-message"><span class="spinner"></span> Buscando tiendas...</div>
+                    } @else if (loadError) {
+                      <div class="option-message error-text">{{ loadError }}</div>
+                    } @else if (suggestions.length === 0) {
+                      <div class="option-message">No se encontraron tiendas para esta marca.</div>
+                    } @else {
+                      @for (tienda of suggestions; track tienda.tiendaCadenaKey) {
+                        <button type="button" class="store-option" role="option" (mousedown)="selectTienda(tienda)">
+                          <span class="option-seal">{{ marcaControl.value.slice(0, 1) }}</span>
+                          <span>
+                            <strong>{{ storeLabel(tienda) }}</strong>
+                            <small>{{ tienda.region || tienda.provincia || 'Region no registrada' }} &middot; {{ tienda.codigoTiendaB2B || tienda.tiendaCadenaKey }}</small>
+                          </span>
+                        </button>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    @if (materialSearched || loadingMaterial) {
+      <section class="panel result-panel">
+        <div class="panel-title">
+          <span>02</span>
+          <div>
+            <h2>Material de impulso</h2>
+            <p>Material asignado y evidencias acumuladas.</p>
+          </div>
+        </div>
+
+        @if (loadingMaterial) {
+          <div class="state-card"><span class="spinner"></span> Consultando asignacion...</div>
+        } @else if (materialError) {
+          <div class="state-card error-text">{{ materialError }}</div>
+        } @else if (materials.length === 0) {
+          <div class="state-card empty-state">
+            <strong>Sin material configurado</strong>
+            <span>Esta tienda todavia no tiene un material de impulso activo asignado.</span>
+          </div>
+        } @else {
+          @if (materials.length > 1) {
+            <div class="field-group material-picker">
+              <label for="material-select">Selecciona el material</label>
+              <div class="select-wrap">
+                <select
+                  id="material-select"
+                  [value]="material?.materialImpulsoTiendaId || ''"
+                  [disabled]="uploadingPhoto"
+                  (change)="selectMaterialById($event)"
+                >
+                  <option value="">Elegir material</option>
+                  @for (item of materials; track item.materialImpulsoTiendaId) {
+                    <option [value]="item.materialImpulsoTiendaId">
+                      {{ item.nombreMaterial }} · Objetivo {{ item.cuotaDiaria || 'por definir' }}
+                    </option>
+                  }
+                </select>
+              </div>
+            </div>
+          }
+
+          @if (!material) {
+            <div class="state-card empty-state">
+              <strong>Elige un material</strong>
+              <span>Esta tienda tiene varios materiales activos. Selecciona el que vas a registrar.</span>
+            </div>
+          } @else {
+          <div class="material-card">
+            <div class="material-info">
+              <span class="material-icon">M</span>
+              <div>
+                <small>Material determinado</small>
+                <h3>{{ material.nombreMaterial }}</h3>
+                <p>{{ material.descripcion || 'Sin indicaciones adicionales.' }}</p>
+              </div>
+            </div>
+
+            <div class="counter-card">
+              <small>Acumulado total</small>
+              <strong>{{ material.acumulado }}</strong>
+              <span>evidencias</span>
+            </div>
+
+            <div class="counter-card objective-card">
+              <small>Objetivo diario</small>
+              <strong>{{ material.cuotaDiaria > 0 ? material.cuotaDiaria : '—' }}</strong>
+              <span>{{ material.cuotaDiaria > 0 ? 'sabado o domingo' : 'por definir' }}</span>
+            </div>
+          </div>
+
+          @if (cameraOpen) {
+            <div class="camera-stage">
+              <video #cameraVideo autoplay muted playsinline aria-label="Vista en vivo de la camara"></video>
+              @if (cameraStarting) {
+                <div class="camera-loading"><span class="spinner"></span> Iniciando camara...</div>
+              }
+              <div class="camera-controls">
+                <button type="button" class="camera-cancel" (click)="closeCamera()">Cancelar</button>
+                <button type="button" class="photo-button" [disabled]="cameraStarting" (click)="captureCameraPhoto()">
+                  <span class="camera-icon"></span>
+                  Capturar foto
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="capture-area">
+              @if (photoPreviewUrl) {
+                <img [src]="photoPreviewUrl" alt="Ultima evidencia capturada">
+              } @else {
+                <div class="camera-placeholder"><span></span></div>
+              }
+
+              <div class="capture-copy">
+                <h3>Registra la evidencia</h3>
+                <p>La foto se tomara en el momento usando la camara del dispositivo.</p>
+              </div>
+
+              <button type="button" class="photo-button" [disabled]="uploadingPhoto" (click)="openCamera()">
+                <span class="camera-icon"></span>
+                {{ uploadingPhoto ? 'Guardando...' : (photoPreviewUrl ? 'Tomar otra foto' : 'Abrir camara') }}
+              </button>
+            </div>
+          }
+
+          @if (cameraError) {
+            <div class="success-message upload-error" role="alert">{{ cameraError }}</div>
+          }
+
+          @if (photoMessage) {
+            <div class="success-message" role="status"><span>&#10003;</span>{{ photoMessage }}</div>
+          }
+
+          @if (photoError) {
+            <div class="success-message upload-error" role="alert">{{ photoError }}</div>
+          }
+          }
+        }
+      </section>
+    }
+
+    <footer>Formulario seguro &middot; Evidencias almacenadas en la base de datos</footer>
+  </section>
+</main>

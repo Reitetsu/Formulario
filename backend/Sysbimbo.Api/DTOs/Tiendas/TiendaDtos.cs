@@ -75,9 +75,11 @@ public class UpdateTiendaDto
 public class TiendaQueryDto
 {
     public string? Cadena { get; init; }
+    public string? Marca { get; init; }
     public string? Region { get; init; }
     public string? Nombre { get; init; }
     public string? CodigoTiendaB2B { get; init; }
+    public bool SoloConMaterialActivo { get; init; }
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
 }

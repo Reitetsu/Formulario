@@ -22,9 +22,11 @@ export interface Tienda {
 
 export interface TiendaQuery {
   cadena?: string;
+  marca?: string;
   region?: string;
   nombre?: string;
   codigoTiendaB2B?: string;
+  soloConMaterialActivo?: boolean;
   pageNumber: number;
   pageSize: number;
 }

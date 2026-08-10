@@ -24,6 +24,10 @@ export class TiendasService {
       params = params.set('cadena', query.cadena);
     }
 
+    if (query.marca) {
+      params = params.set('marca', query.marca);
+    }
+
     if (query.region) {
       params = params.set('region', query.region);
     }
@@ -34,6 +38,10 @@ export class TiendasService {
 
     if (query.codigoTiendaB2B) {
       params = params.set('codigoTiendaB2B', query.codigoTiendaB2B);
+    }
+
+    if (query.soloConMaterialActivo !== undefined) {
+      params = params.set('soloConMaterialActivo', query.soloConMaterialActivo);
     }
 
     return this.http.get<PagedResult<Tienda>>(this.endpoint, { params });

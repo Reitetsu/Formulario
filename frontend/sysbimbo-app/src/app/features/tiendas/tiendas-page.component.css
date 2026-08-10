@@ -2,3 +2,33 @@
   font-weight: 600;
   color: var(--text-soft);
 }
+
+.editor-card {
+  position: sticky;
+  top: 1rem;
+}
+
+.store-count {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.brand-chip {
+  background: rgba(34, 84, 61, 0.09);
+  border-radius: 999px;
+  color: var(--brand-strong);
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.3rem 0.6rem;
+}
+
+.required {
+  color: #b42318;
+}
+
+@media (max-width: 1199.98px) {
+  .editor-card {
+    position: static;
+  }
+}

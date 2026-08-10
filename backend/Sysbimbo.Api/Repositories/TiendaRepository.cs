@@ -21,6 +21,12 @@ public class TiendaRepository(SysbimboDbContext dbContext) : ITiendaRepository
             query = query.Where(x => x.Cadena != null && EF.Functions.Like(x.Cadena, $"%{filter.Cadena}%"));
         }
 
+        if (!string.IsNullOrWhiteSpace(filter.Marca))
+        {
+            query = query.Where(x =>
+                x.Formato != null && EF.Functions.Like(x.Formato, $"%{filter.Marca}%"));
+        }
+
         if (!string.IsNullOrWhiteSpace(filter.Region))
         {
             query = query.Where(x => x.Region != null && EF.Functions.Like(x.Region, $"%{filter.Region}%"));
@@ -36,6 +42,12 @@ public class TiendaRepository(SysbimboDbContext dbContext) : ITiendaRepository
         if (!string.IsNullOrWhiteSpace(filter.CodigoTiendaB2B))
         {
             query = query.Where(x => x.CodigoTiendaB2B != null && EF.Functions.Like(x.CodigoTiendaB2B, $"%{filter.CodigoTiendaB2B}%"));
+        }
+
+        if (filter.SoloConMaterialActivo)
+        {
+            query = query.Where(x => dbContext.MaterialesImpulsoTienda.Any(material =>
+                material.TiendaCadenaKey == x.TiendaCadenaKey && material.Activo));
         }
 
         query = query.OrderBy(x => x.TiendaCadenaKey);

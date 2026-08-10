@@ -14,9 +14,11 @@ public class TiendaService(ITiendaRepository tiendaRepository) : ITiendaService
         var result = await tiendaRepository.GetAllAsync(new TiendaFilter
         {
             Cadena = query.Cadena,
+            Marca = query.Marca,
             Region = query.Region,
             Nombre = query.Nombre,
             CodigoTiendaB2B = query.CodigoTiendaB2B,
+            SoloConMaterialActivo = query.SoloConMaterialActivo,
             PageNumber = query.PageNumber,
             PageSize = query.PageSize
         }, cancellationToken);

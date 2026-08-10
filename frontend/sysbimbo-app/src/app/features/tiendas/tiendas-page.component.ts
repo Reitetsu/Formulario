@@ -30,9 +30,7 @@ export class TiendasPageComponent implements OnInit {
 
   protected readonly filtersForm = this.fb.group({
     nombre: [''],
-    cadena: [''],
-    region: [''],
-    codigoTiendaB2B: [''],
+    marca: [''],
     pageSize: [10, [Validators.required]]
   });
 
@@ -40,11 +38,11 @@ export class TiendasPageComponent implements OnInit {
     tiendaCadenaKey: ['', [Validators.required]],
     codigoTiendaB2BPrefijo: [''],
     codigoTiendaB2B: [''],
-    nombreTienda: [''],
+    nombreTienda: ['', [Validators.required]],
     nombreTiendaBimbo: [''],
     canal: [''],
     cadena: [''],
-    formato: [''],
+    formato: ['', [Validators.required]],
     tipoLocal: [''],
     limaProvincias: [''],
     region: [''],
@@ -70,6 +68,7 @@ export class TiendasPageComponent implements OnInit {
   protected saving = false;
   protected isEditing = false;
   protected selectedId: string | null = null;
+  protected readonly marcas = ['TOTTUS', 'METRO', 'MAKRO', 'PLAZA VEA'];
 
   constructor() {
     this.startCreate();
@@ -88,9 +87,7 @@ export class TiendasPageComponent implements OnInit {
     this.tiendasService
       .list({
         nombre: this.cleanFilter(filters.nombre),
-        cadena: this.cleanFilter(filters.cadena),
-        region: this.cleanFilter(filters.region),
-        codigoTiendaB2B: this.cleanFilter(filters.codigoTiendaB2B),
+        marca: this.cleanFilter(filters.marca),
         pageNumber,
         pageSize: Number(filters.pageSize) || 10
       })
@@ -116,9 +113,7 @@ export class TiendasPageComponent implements OnInit {
   protected clearFilters(): void {
     this.filtersForm.reset({
       nombre: '',
-      cadena: '',
-      region: '',
-      codigoTiendaB2B: '',
+      marca: '',
       pageSize: this.filtersForm.value.pageSize ?? 10
     });
     this.load(1);
@@ -129,7 +124,7 @@ export class TiendasPageComponent implements OnInit {
     this.selectedId = null;
     this.editorForm.enable();
     this.editorForm.reset({
-      tiendaCadenaKey: '',
+      tiendaCadenaKey: this.createManualKey(),
       codigoTiendaB2BPrefijo: '',
       codigoTiendaB2B: '',
       nombreTienda: '',
@@ -278,6 +273,10 @@ export class TiendasPageComponent implements OnInit {
   private cleanFilter(value: string | null | undefined): string | undefined {
     const trimmed = value?.trim();
     return trimmed ? trimmed : undefined;
+  }
+
+  private createManualKey(): string {
+    return `MANUAL-${crypto.randomUUID().replaceAll('-', '').toUpperCase()}`;
   }
 
   private handleError(error: unknown, fallbackMessage: string): void {

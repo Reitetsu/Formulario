@@ -31,6 +31,7 @@ builder.Services.AddScoped<ICampaniaService, CampaniaService>();
 builder.Services.AddScoped<ICampaniaProgramacionService, CampaniaProgramacionService>();
 builder.Services.AddScoped<ICuotaService, CuotaService>();
 builder.Services.AddScoped<IProgramacionService, ProgramacionService>();
+builder.Services.AddScoped<IMaterialImpulsoService, MaterialImpulsoService>();
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddCors(options =>

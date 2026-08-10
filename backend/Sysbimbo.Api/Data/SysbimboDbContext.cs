@@ -12,6 +12,8 @@ public class SysbimboDbContext(DbContextOptions<SysbimboDbContext> options) : Db
     public DbSet<Programacion> Programaciones => Set<Programacion>();
     public DbSet<DetalleProgramacion> DetalleProgramaciones => Set<DetalleProgramacion>();
     public DbSet<AsymmetricaNuevoVenta> VentasAsymmetricaNuevo => Set<AsymmetricaNuevoVenta>();
+    public DbSet<MaterialImpulsoTienda> MaterialesImpulsoTienda => Set<MaterialImpulsoTienda>();
+    public DbSet<FotoMaterialImpulso> FotosMaterialImpulso => Set<FotoMaterialImpulso>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +59,27 @@ public class SysbimboDbContext(DbContextOptions<SysbimboDbContext> options) : Db
             entity.ToView("ASYMMETRICA NUEVO");
             entity.HasNoKey();
             entity.Property(x => x.VentaUnidades).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<MaterialImpulsoTienda>(entity =>
+        {
+            entity.ToTable("MaterialImpulsoTienda");
+            entity.HasKey(x => x.MaterialImpulsoTiendaId);
+            entity.HasIndex(x => new { x.TiendaCadenaKey, x.NombreMaterial })
+                .IsUnique()
+                .HasDatabaseName("UX_MaterialImpulsoTienda_Tienda_Material_Activo")
+                .HasFilter("[Activo] = 1");
+        });
+
+        modelBuilder.Entity<FotoMaterialImpulso>(entity =>
+        {
+            entity.ToTable("FotoMaterialImpulso");
+            entity.HasKey(x => x.FotoMaterialImpulsoId);
+            entity.HasOne(x => x.MaterialImpulsoTienda)
+                .WithMany(x => x.Fotos)
+                .HasForeignKey(x => x.MaterialImpulsoTiendaId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(x => new { x.MaterialImpulsoTiendaId, x.FechaCaptura });
         });
     }
 }

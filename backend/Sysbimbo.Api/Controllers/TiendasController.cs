@@ -8,6 +8,8 @@ namespace Sysbimbo.Api.Controllers;
 [Route("api/[controller]")]
 public class TiendasController(ITiendaService tiendaService) : ControllerBase
 {
+    private const string GetByIdRouteName = "GetTiendaById";
+
     [HttpGet]
     public async Task<ActionResult> GetAllAsync([FromQuery] TiendaQueryDto query, CancellationToken cancellationToken)
     {
@@ -15,7 +17,7 @@ public class TiendasController(ITiendaService tiendaService) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id}", Name = GetByIdRouteName)]
     public async Task<ActionResult> GetByIdAsync(string id, CancellationToken cancellationToken)
     {
         var result = await tiendaService.GetByIdAsync(id, cancellationToken);
@@ -26,7 +28,7 @@ public class TiendasController(ITiendaService tiendaService) : ControllerBase
     public async Task<ActionResult> CreateAsync([FromBody] CreateTiendaDto dto, CancellationToken cancellationToken)
     {
         var result = await tiendaService.CreateAsync(dto, cancellationToken);
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.TiendaCadenaKey }, result);
+        return CreatedAtRoute(GetByIdRouteName, new { id = result.TiendaCadenaKey }, result);
     }
 
     [HttpPut("{id}")]

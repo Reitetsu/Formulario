@@ -6,7 +6,7 @@ namespace Sysbimbo.Api.Controllers;
 
 [ApiController]
 [Route("api/health")]
-public class HealthController(SysbimboDbContext dbContext) : ControllerBase
+public class HealthController(FormularioDbContext dbContext) : ControllerBase
 {
     [HttpGet("database")]
     public async Task<IActionResult> CheckDatabaseAsync(CancellationToken cancellationToken)
@@ -20,7 +20,7 @@ public class HealthController(SysbimboDbContext dbContext) : ControllerBase
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, new
                 {
                     success = false,
-                    message = "No fue posible conectarse a SQL Server."
+                    message = "No fue posible conectarse a PostgreSQL."
                 });
             }
 
@@ -29,7 +29,8 @@ public class HealthController(SysbimboDbContext dbContext) : ControllerBase
             return Ok(new
             {
                 success = true,
-                message = "Conexion a SQL Server exitosa.",
+                message = "Conexion a PostgreSQL exitosa.",
+                provider = "PostgreSQL",
                 database = databaseName
             });
         }
@@ -38,7 +39,7 @@ public class HealthController(SysbimboDbContext dbContext) : ControllerBase
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new
             {
                 success = false,
-                message = "La conexion a SQL Server fallo.",
+                message = "La conexion a PostgreSQL fallo.",
                 detail = exception.Message
             });
         }

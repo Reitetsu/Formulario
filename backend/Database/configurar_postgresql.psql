@@ -1,0 +1,40 @@
+\set ON_ERROR_STOP on
+
+\echo
+\echo Configurando el usuario sysbimbo_app...
+
+SELECT 'CREATE ROLE sysbimbo_app LOGIN'
+WHERE NOT EXISTS
+(
+    SELECT 1
+    FROM pg_catalog.pg_roles
+    WHERE rolname = 'sysbimbo_app'
+) \gexec
+
+\echo
+\echo Define ahora la clave privada del usuario sysbimbo_app.
+\echo PostgreSQL la solicitara dos veces y no la mostrara en pantalla.
+\password sysbimbo_app
+
+\echo
+\echo Creando la base sysbimbo_formulario si aun no existe...
+
+SELECT 'CREATE DATABASE sysbimbo_formulario OWNER sysbimbo_app ENCODING ''UTF8'' TEMPLATE template0'
+WHERE NOT EXISTS
+(
+    SELECT 1
+    FROM pg_catalog.pg_database
+    WHERE datname = 'sysbimbo_formulario'
+) \gexec
+
+ALTER DATABASE sysbimbo_formulario OWNER TO sysbimbo_app;
+
+\connect sysbimbo_formulario
+
+GRANT CONNECT ON DATABASE sysbimbo_formulario TO sysbimbo_app;
+GRANT USAGE, CREATE ON SCHEMA public TO sysbimbo_app;
+ALTER SCHEMA public OWNER TO sysbimbo_app;
+
+\echo
+\echo PostgreSQL quedo preparado correctamente.
+\echo Conserva la clave de sysbimbo_app para configurar el backend.

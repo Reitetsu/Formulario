@@ -8,7 +8,7 @@ using Sysbimbo.Api.Services.Interfaces;
 
 namespace Sysbimbo.Api.Services;
 
-public class MaterialImpulsoService(SysbimboDbContext dbContext, TimeProvider timeProvider)
+public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider timeProvider)
     : IMaterialImpulsoService
 {
     private const long MaxPhotoSize = 10 * 1024 * 1024;
@@ -311,19 +311,19 @@ public class MaterialImpulsoService(SysbimboDbContext dbContext, TimeProvider ti
         if (!string.IsNullOrWhiteSpace(query.Material))
         {
             var material = query.Material.Trim();
-            result = result.Where(x => EF.Functions.Like(x.NombreMaterial, $"%{material}%"));
+            result = result.Where(x => EF.Functions.ILike(x.NombreMaterial, $"%{material}%"));
         }
 
         if (!string.IsNullOrWhiteSpace(query.Tienda))
         {
             var tienda = query.Tienda.Trim();
-            result = result.Where(x => EF.Functions.Like(x.NombreTienda, $"%{tienda}%"));
+            result = result.Where(x => EF.Functions.ILike(x.NombreTienda, $"%{tienda}%"));
         }
 
         if (!string.IsNullOrWhiteSpace(query.Marca))
         {
             var marca = query.Marca.Trim();
-            result = result.Where(x => x.Formato != null && EF.Functions.Like(x.Formato, $"%{marca}%"));
+            result = result.Where(x => x.Formato != null && EF.Functions.ILike(x.Formato, $"%{marca}%"));
         }
 
         return result;

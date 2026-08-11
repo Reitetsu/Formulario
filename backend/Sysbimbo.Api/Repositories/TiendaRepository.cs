@@ -7,7 +7,7 @@ using Sysbimbo.Api.Repositories.Interfaces;
 
 namespace Sysbimbo.Api.Repositories;
 
-public class TiendaRepository(SysbimboDbContext dbContext) : ITiendaRepository
+public class TiendaRepository(FormularioDbContext dbContext) : ITiendaRepository
 {
     public async Task<PagedResult<DimTiendaMaestraExport>> GetAllAsync(TiendaFilter filter, CancellationToken cancellationToken)
     {
@@ -18,30 +18,30 @@ public class TiendaRepository(SysbimboDbContext dbContext) : ITiendaRepository
 
         if (!string.IsNullOrWhiteSpace(filter.Cadena))
         {
-            query = query.Where(x => x.Cadena != null && EF.Functions.Like(x.Cadena, $"%{filter.Cadena}%"));
+            query = query.Where(x => x.Cadena != null && EF.Functions.ILike(x.Cadena, $"%{filter.Cadena}%"));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Marca))
         {
             query = query.Where(x =>
-                x.Formato != null && EF.Functions.Like(x.Formato, $"%{filter.Marca}%"));
+                x.Formato != null && EF.Functions.ILike(x.Formato, $"%{filter.Marca}%"));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Region))
         {
-            query = query.Where(x => x.Region != null && EF.Functions.Like(x.Region, $"%{filter.Region}%"));
+            query = query.Where(x => x.Region != null && EF.Functions.ILike(x.Region, $"%{filter.Region}%"));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Nombre))
         {
             query = query.Where(x =>
-                (x.NombreTienda != null && EF.Functions.Like(x.NombreTienda, $"%{filter.Nombre}%")) ||
-                (x.NombreTiendaBimbo != null && EF.Functions.Like(x.NombreTiendaBimbo, $"%{filter.Nombre}%")));
+                (x.NombreTienda != null && EF.Functions.ILike(x.NombreTienda, $"%{filter.Nombre}%")) ||
+                (x.NombreTiendaBimbo != null && EF.Functions.ILike(x.NombreTiendaBimbo, $"%{filter.Nombre}%")));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.CodigoTiendaB2B))
         {
-            query = query.Where(x => x.CodigoTiendaB2B != null && EF.Functions.Like(x.CodigoTiendaB2B, $"%{filter.CodigoTiendaB2B}%"));
+            query = query.Where(x => x.CodigoTiendaB2B != null && EF.Functions.ILike(x.CodigoTiendaB2B, $"%{filter.CodigoTiendaB2B}%"));
         }
 
         if (filter.SoloConMaterialActivo)

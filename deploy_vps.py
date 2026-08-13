@@ -4,13 +4,43 @@ import argparse
 import subprocess
 import gzip
 import shutil
+import shlex
 import paramiko
 
-HOST = "79.143.88.66"
-PORT = 22
-USER = "root"
-PASSWORD = "JWRdRn9RzyUziCq"
-REMOTE_DIR = "/root/formulario"
+HOST = os.environ.get("VPS_HOST", "79.143.88.66")
+PORT = int(os.environ.get("VPS_PORT", "22"))
+USER = os.environ.get("VPS_USER", "root")
+PASSWORD = os.environ.get("VPS_PASSWORD")
+SSH_KEY = os.path.expanduser(os.environ["VPS_SSH_KEY"]) if os.environ.get("VPS_SSH_KEY") else None
+REMOTE_DIR = os.environ.get("VPS_REMOTE_DIR", "/root/formulario")
+POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+
+
+def connect_ssh():
+    ssh = paramiko.SSHClient()
+    ssh.load_system_host_keys()
+    ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+
+    connect_args = {
+        "hostname": HOST,
+        "port": PORT,
+        "username": USER,
+        "timeout": 30,
+        "banner_timeout": 60,
+        "allow_agent": True,
+        "look_for_keys": True,
+    }
+    if PASSWORD:
+        connect_args["password"] = PASSWORD
+    if SSH_KEY:
+        connect_args["key_filename"] = SSH_KEY
+
+    ssh.connect(**connect_args)
+    transport = ssh.get_transport()
+    if transport:
+        transport.set_keepalive(10)
+    return ssh
 
 def run_local(cmd):
     print(f"--> Ejecutando localmente: {cmd}")
@@ -78,13 +108,7 @@ def main():
         compress_gzip("web.tar", "web.tar.gz")
 
     print(f"\n=== 3. Conectando por SSH a {USER}@{HOST} ===")
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(HOST, port=PORT, username=USER, password=PASSWORD, timeout=30, banner_timeout=60)
-    
-    transport = ssh.get_transport()
-    if transport:
-        transport.set_keepalive(10)
+    ssh = connect_ssh()
     
     sftp = ssh.open_sftp()
     print("Conexión SSH / SFTP exitosa.")
@@ -94,22 +118,11 @@ def main():
         sftp.mkdir(REMOTE_DIR)
     except IOError:
         pass
-    try:
-        sftp.mkdir(f"{REMOTE_DIR}/backend")
-    except IOError:
-        pass
-    try:
-        sftp.mkdir(f"{REMOTE_DIR}/backend/Database")
-    except IOError:
-        pass
-
     print("\n=== 5. Transfiriendo archivos requeridos vía SFTP ===")
     
     files_to_upload = [
         ("docker-compose.yml", f"{REMOTE_DIR}/docker-compose.yml"),
         ("deploy-vps.sh", f"{REMOTE_DIR}/deploy-vps.sh"),
-        ("backend/Database/formulario_postgresql.sql", f"{REMOTE_DIR}/backend/Database/formulario_postgresql.sql"),
-        ("backend/Database/datos_formulario_postgresql.sql", f"{REMOTE_DIR}/backend/Database/datos_formulario_postgresql.sql"),
     ]
 
     if deploy_frontend:
@@ -123,23 +136,42 @@ def main():
         cb = create_progress_callback(filename)
         sftp.put(local_path, remote_path, callback=cb)
 
+    remote_env_path = f"{REMOTE_DIR}/.env"
+    if POSTGRES_PASSWORD:
+        if "\n" in POSTGRES_PASSWORD or "\r" in POSTGRES_PASSWORD:
+            raise ValueError("POSTGRES_PASSWORD contiene caracteres no permitidos.")
+        with sftp.open(remote_env_path, "w") as env_file:
+            env_file.write(
+                f"POSTGRES_USER={POSTGRES_USER}\n"
+                f"POSTGRES_PASSWORD={POSTGRES_PASSWORD}\n"
+            )
+        sftp.chmod(remote_env_path, 0o600)
+        print("Archivo .env privado actualizado en el VPS.")
+    else:
+        try:
+            sftp.stat(remote_env_path)
+        except IOError as error:
+            raise RuntimeError(
+                "El VPS no tiene .env. Configura POSTGRES_PASSWORD una vez antes de desplegar."
+            ) from error
+
     sftp.close()
-    ssh.close()
     print("Transferencia de archivos completada exitosamente.")
 
     print("\n=== 6. Ejecutando despliegue remoto en el VPS ===")
-    ssh_exec = paramiko.SSHClient()
-    ssh_exec.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_exec.connect(HOST, port=PORT, username=USER, password=PASSWORD, timeout=30, banner_timeout=60)
-    
-    cmd_deploy = f"cd {REMOTE_DIR} && chmod +x deploy-vps.sh backend/Database/init-db.sh && ./deploy-vps.sh {mode}"
-    stdin, stdout, stderr = ssh_exec.exec_command(cmd_deploy, get_pty=True)
+    quoted_remote_dir = shlex.quote(REMOTE_DIR)
+    cmd_deploy = f"cd {quoted_remote_dir} && chmod +x deploy-vps.sh && ./deploy-vps.sh {mode}"
+    stdin, stdout, stderr = ssh.exec_command(cmd_deploy, get_pty=True)
 
     for line in iter(stdout.readline, ""):
         sys.stdout.buffer.write(line.encode('utf-8', errors='ignore'))
         sys.stdout.buffer.flush()
 
-    ssh_exec.close()
+    exit_code = stdout.channel.recv_exit_status()
+    ssh.close()
+    if exit_code != 0:
+        print(f"El despliegue remoto termino con codigo {exit_code}.")
+        sys.exit(exit_code)
     print("\n=== ¡Despliegue finalizado con éxito! ===")
     print(f"Accede a la aplicación en: http://{HOST}/")
 

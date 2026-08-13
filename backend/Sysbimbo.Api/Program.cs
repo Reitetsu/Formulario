@@ -46,7 +46,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AngularClient", policy =>
     {
         policy
-            .SetIsOriginAllowed(_ => true)
+            .WithOrigins(
+                "http://localhost:4200",
+                "https://innovamsp.lat",
+                "https://www.innovamsp.lat")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

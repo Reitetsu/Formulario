@@ -19,3 +19,10 @@ frontend/sysbimbo-app/node_modules/
 *.tar
 *.tar.gz
 
+.env
+.env.*
+!.env.example
+.deploy/
+__pycache__/
+*.py[cod]
+

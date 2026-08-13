@@ -11,11 +11,12 @@ import { MaterialesPageComponent } from './features/materiales/materiales-page.c
 
 export const routes: Routes = [
   { path: 'habilitar-tienda', component: HabilitarTiendaComponent },
+  { path: '', redirectTo: 'habilitar-tienda', pathMatch: 'full' },
   {
     path: '',
     component: ShellComponent,
     children: [
-      { path: '', component: HomeComponent },
+      { path: 'home', component: HomeComponent },
       { path: 'tiendas', component: TiendasPageComponent },
       { path: 'materiales', component: MaterialesPageComponent },
       { path: 'skus', component: SkusPageComponent },

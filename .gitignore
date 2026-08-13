@@ -16,3 +16,6 @@ frontend/sysbimbo-app/node_modules/
 
 *.user
 *.suo
+*.tar
+*.tar.gz
+

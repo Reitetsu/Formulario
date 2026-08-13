@@ -11,6 +11,7 @@ namespace Sysbimbo.Api.Services;
 public class FormularioDataMigrationService(
     SysbimboDbContext sqlServer,
     FormularioDbContext postgres,
+    FormularioDbSeeder seeder,
     ILogger<FormularioDataMigrationService> logger)
 {
     private const int StoreBatchSize = 200;
@@ -27,6 +28,7 @@ public class FormularioDataMigrationService(
         var photosCopied = await CopyPhotosAsync(cancellationToken);
 
         await SynchronizeIdentitySequencesAsync(cancellationToken);
+        await seeder.SeedAsync(cancellationToken);
         await VerifyCountsAsync(cancellationToken);
 
         logger.LogInformation(

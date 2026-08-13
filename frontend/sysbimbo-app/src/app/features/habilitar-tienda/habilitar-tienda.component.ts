@@ -6,9 +6,12 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
   catchError,
   combineLatest,
+  concatMap,
   debounceTime,
   distinctUntilChanged,
   finalize,
+  from,
+  map,
   of,
   startWith,
   switchMap,
@@ -52,6 +55,7 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
   protected photoMessage = '';
   protected photoError = '';
   protected photoPreviewUrl = '';
+  protected uploadProgress = '';
   protected cameraOpen = false;
   protected cameraStarting = false;
   protected cameraError = '';
@@ -292,6 +296,16 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
     }, 'image/jpeg', 0.82);
   }
 
+  protected uploadSelectedPhotos(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+
+    if (files.length > 0) {
+      this.uploadPhotos(files);
+    }
+  }
+
   protected closeCamera(): void {
     this.stopCameraStream();
     this.cameraOpen = false;
@@ -300,44 +314,82 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
   }
 
   private uploadPhoto(file: File): void {
-    if (!this.material) return;
+    this.uploadPhotos([file]);
+  }
 
-    if (this.photoPreviewUrl) {
-      URL.revokeObjectURL(this.photoPreviewUrl);
-    }
+  private uploadPhotos(files: File[]): void {
+    if (!this.material || this.uploadingPhoto || files.length === 0) return;
 
-    this.photoPreviewUrl = URL.createObjectURL(file);
+    const materialId = this.material.materialImpulsoTiendaId;
+    let savedPhotos = 0;
+    let failedPhotos = 0;
+
     this.uploadingPhoto = true;
     this.photoMessage = '';
     this.photoError = '';
+    this.cameraError = '';
 
-    this.materialesService
-      .savePhoto(this.material.materialImpulsoTiendaId, file)
+    from(files)
       .pipe(
+        concatMap((file, index) => {
+          this.uploadProgress = files.length > 1
+            ? `Guardando foto ${index + 1} de ${files.length}...`
+            : 'Guardando foto...';
+          this.setPhotoPreview(file);
+          this.cdr.markForCheck();
+
+          return this.materialesService.savePhoto(materialId, file).pipe(
+            map(result => ({ result, error: null as unknown })),
+            catchError((error: unknown) => of({ result: null, error }))
+          );
+        }),
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
           this.uploadingPhoto = false;
+          this.uploadProgress = '';
           this.cdr.markForCheck();
         })
       )
       .subscribe({
-        next: (result) => {
+        next: ({ result, error }) => {
+          if (!result) {
+            failedPhotos++;
+            this.photoError = this.errorMessage(error, 'No fue posible guardar una de las fotografias.');
+            return;
+          }
+
+          savedPhotos++;
           this.materials = this.materials.map(item =>
             item.materialImpulsoTiendaId === result.materialImpulsoTiendaId
               ? { ...item, acumulado: result.acumulado }
               : item
           );
-          if (this.material) {
+          if (this.material?.materialImpulsoTiendaId === result.materialImpulsoTiendaId) {
             this.material = { ...this.material, acumulado: result.acumulado };
           }
-          this.photoMessage = 'Foto guardada correctamente. El acumulado se actualizo.';
           this.cdr.markForCheck();
         },
-        error: (error: unknown) => {
-          this.photoError = this.errorMessage(error, 'No fue posible guardar la fotografia.');
+        complete: () => {
+          if (savedPhotos > 0) {
+            this.photoMessage = savedPhotos === 1
+              ? 'Foto guardada correctamente. Se registro 1 entrega.'
+              : `${savedPhotos} fotos guardadas correctamente. Se registraron ${savedPhotos} entregas.`;
+          }
+
+          if (failedPhotos > 0) {
+            this.photoError = `${failedPhotos} ${failedPhotos === 1 ? 'foto no pudo' : 'fotos no pudieron'} guardarse. Las demas entregas si fueron registradas.`;
+          }
           this.cdr.markForCheck();
         }
       });
+  }
+
+  private setPhotoPreview(file: File): void {
+    if (this.photoPreviewUrl) {
+      URL.revokeObjectURL(this.photoPreviewUrl);
+    }
+
+    this.photoPreviewUrl = URL.createObjectURL(file);
   }
 
   protected storeLabel(tienda: Tienda): string {

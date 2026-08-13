@@ -12,6 +12,7 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
     : IMaterialImpulsoService
 {
     private const long MaxPhotoSize = 10 * 1024 * 1024;
+    private static readonly TimeZoneInfo BusinessTimeZone = ResolveBusinessTimeZone();
 
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -179,6 +180,7 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
         CancellationToken cancellationToken)
     {
         var key = NormalizeStoreKey(tiendaCadenaKey);
+        var (dayStartUtc, dayEndUtc) = GetCurrentBusinessDayUtcRange();
 
         return await dbContext.MaterialesImpulsoTienda
             .AsNoTracking()
@@ -191,7 +193,9 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
                 NombreMaterial = x.NombreMaterial,
                 Descripcion = x.Descripcion,
                 CuotaDiaria = x.CuotaDiaria,
-                Acumulado = x.Fotos.Count
+                Acumulado = x.Fotos.Count(foto =>
+                    foto.FechaCaptura >= dayStartUtc &&
+                    foto.FechaCaptura < dayEndUtc)
             })
             .ToArrayAsync(cancellationToken);
     }
@@ -239,8 +243,13 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
         await dbContext.FotosMaterialImpulso.AddAsync(entity, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
+        var (dayStartUtc, dayEndUtc) = GetCurrentBusinessDayUtcRange();
         var acumulado = await dbContext.FotosMaterialImpulso
-            .CountAsync(x => x.MaterialImpulsoTiendaId == material.MaterialImpulsoTiendaId, cancellationToken);
+            .CountAsync(
+                x => x.MaterialImpulsoTiendaId == material.MaterialImpulsoTiendaId &&
+                     x.FechaCaptura >= dayStartUtc &&
+                     x.FechaCaptura < dayEndUtc,
+                cancellationToken);
 
         return new FotoMaterialImpulsoDto
         {
@@ -279,6 +288,39 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
         }
 
         return key;
+    }
+
+    private (DateTime DayStartUtc, DateTime DayEndUtc) GetCurrentBusinessDayUtcRange()
+    {
+        var businessNow = TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), BusinessTimeZone);
+        var businessDate = DateOnly.FromDateTime(businessNow.DateTime);
+        var localDayStart = businessDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+        var localDayEnd = businessDate.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+
+        return (
+            TimeZoneInfo.ConvertTimeToUtc(localDayStart, BusinessTimeZone),
+            TimeZoneInfo.ConvertTimeToUtc(localDayEnd, BusinessTimeZone));
+    }
+
+    private static TimeZoneInfo ResolveBusinessTimeZone()
+    {
+        foreach (var timeZoneId in new[] { "America/Lima", "SA Pacific Standard Time" })
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                // Se intenta el identificador equivalente del siguiente sistema operativo.
+            }
+            catch (InvalidTimeZoneException)
+            {
+                // Se intenta el identificador equivalente del siguiente sistema operativo.
+            }
+        }
+
+        throw new InvalidOperationException("No fue posible configurar la zona horaria America/Lima.");
     }
 
     private IQueryable<MaterialImpulsoAdminDto> BuildAdminQuery() =>

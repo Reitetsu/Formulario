@@ -37,6 +37,7 @@ builder.Services.AddScoped<ICampaniaProgramacionService, CampaniaProgramacionSer
 builder.Services.AddScoped<ICuotaService, CuotaService>();
 builder.Services.AddScoped<IProgramacionService, ProgramacionService>();
 builder.Services.AddScoped<IMaterialImpulsoService, MaterialImpulsoService>();
+builder.Services.AddScoped<FormularioDbSeeder>();
 builder.Services.AddScoped<FormularioDataMigrationService>();
 builder.Services.AddSingleton(TimeProvider.System);
 
@@ -71,6 +72,8 @@ if (args.Any(argument => argument.Equals("--migrate-form-data", StringComparison
 
     return;
 }
+
+await app.InitializeFormularioDatabaseAsync();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 

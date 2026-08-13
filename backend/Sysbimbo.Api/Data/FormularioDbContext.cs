@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Sysbimbo.Api.Models.Entities;
+using Sysbimbo.Api.Models.Identity;
 
 namespace Sysbimbo.Api.Data;
 
@@ -7,14 +10,31 @@ namespace Sysbimbo.Api.Data;
 /// Contexto PostgreSQL exclusivo del formulario publico y sus CRUD de soporte.
 /// Mantiene el alcance de la migracion limitado a tiendas, materiales y fotos.
 /// </summary>
-public class FormularioDbContext(DbContextOptions<FormularioDbContext> options) : DbContext(options)
+public class FormularioDbContext(DbContextOptions<FormularioDbContext> options)
+    : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
 {
     public DbSet<DimTiendaMaestraExport> Tiendas => Set<DimTiendaMaestraExport>();
     public DbSet<MaterialImpulsoTienda> MaterialesImpulsoTienda => Set<MaterialImpulsoTienda>();
     public DbSet<FotoMaterialImpulso> FotosMaterialImpulso => Set<FotoMaterialImpulso>();
+    public DbSet<Cliente> Clientes => Set<Cliente>();
+    public DbSet<Formulario> Formularios => Set<Formulario>();
+    public DbSet<FormularioOpcion> FormularioOpciones => Set<FormularioOpcion>();
+    public DbSet<ClienteTienda> ClientesTiendas => Set<ClienteTienda>();
+    public DbSet<UsuarioCliente> UsuariosClientes => Set<UsuarioCliente>();
+    public DbSet<UsuarioClienteRol> UsuariosClientesRoles => Set<UsuarioClienteRol>();
+    public DbSet<UsuarioFormulario> UsuariosFormularios => Set<UsuarioFormulario>();
+    public DbSet<UsuarioTienda> UsuariosTiendas => Set<UsuarioTienda>();
+    public DbSet<SupervisorPersonal> SupervisoresPersonal => Set<SupervisorPersonal>();
+    public DbSet<ArchivoFormulario> ArchivosFormulario => Set<ArchivoFormulario>();
+    public DbSet<JornadaUsuario> JornadasUsuarios => Set<JornadaUsuario>();
+    public DbSet<FormularioRegistro> FormulariosRegistros => Set<FormularioRegistro>();
+    public DbSet<FormularioRegistroArchivo> FormulariosRegistrosArchivos => Set<FormularioRegistroArchivo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ConfigureIdentity();
+
         modelBuilder.Entity<DimTiendaMaestraExport>(entity =>
         {
             entity.ToTable("tiendas");
@@ -137,5 +157,7 @@ public class FormularioDbContext(DbContextOptions<FormularioDbContext> options) 
             entity.HasIndex(x => new { x.MaterialImpulsoTiendaId, x.FechaCaptura })
                 .HasDatabaseName("ix_fotos_material_fecha");
         });
+
+        modelBuilder.ConfigureControlOperativo();
     }
 }

@@ -38,16 +38,19 @@ Para una instalacion publicada se recomienda la variable de entorno:
 ConnectionStrings__FormularioPostgres
 ```
 
-## 3. Crear las tablas
+## 3. Crear las tablas y cargar los datos iniciales
 
-Hay dos opciones equivalentes:
+No es necesario subir ni ejecutar un script SQL. Al iniciar la API, Entity
+Framework aplica automaticamente las migraciones pendientes y ejecuta un seeder
+idempotente:
 
 ```powershell
-dotnet ef database update --context FormularioDbContext
+dotnet run --project backend/Sysbimbo.Api
 ```
 
-o ejecutar `backend/Database/formulario_postgresql.sql` dentro de la base
-`sysbimbo_formulario`.
+El seeder garantiza los roles base, el cliente BIMBO, el formulario de control,
+sus opciones y la relacion entre BIMBO y las tiendas existentes. Solo agrega lo
+que falta: no modifica opciones ya personalizadas desde el panel.
 
 ## 4. Copiar los datos existentes desde SQL Server
 
@@ -78,3 +81,24 @@ GET /api/materiales-impulso
 Las imagenes siguen almacenadas en PostgreSQL como `bytea` para conservar el
 comportamiento actual. Cuando se configure R2 o Google Drive, una migracion
 posterior reemplazara el binario por la clave del objeto externo.
+
+## 5. Usuarios, jornadas y formularios configurables
+
+La migracion `AddConfigurableUsersAndForms` prepara el modelo para administrar
+varios clientes y formularios sin activar todavia el inicio de sesion en la
+interfaz actual. Incluye:
+
+- usuarios y roles con ASP.NET Core Identity;
+- asignaciones de personal por cliente, tienda, formulario y supervisor;
+- jornadas diarias con hora de ingreso, cierre, foto inicial y dispositivo;
+- formularios independientes por cliente y registros genericos en JSONB;
+- archivos reutilizables para fotos de inicio y evidencias;
+- opciones habilitables por formulario desde un futuro panel de control.
+
+El formulario inicial se registra como `CONTROL_MATERIAL_IMPULSO`. Sus opciones
+son `LOGIN_REQUERIDO`, `ROLES_HABILITADOS`, `FOTO_INICIO_OBLIGATORIA`,
+`CONTROL_TIENDA`, `CONTROL_SUPERVISOR` y `CIERRE_JORNADA_AUTOMATICO`.
+
+Inicialmente solo estan habilitados el control por tienda y el cierre automatico
+a las 23:59:59 en la zona `America/Lima`. Esto mantiene operativo el formulario
+actual hasta que se implemente el panel y el flujo de autenticacion.

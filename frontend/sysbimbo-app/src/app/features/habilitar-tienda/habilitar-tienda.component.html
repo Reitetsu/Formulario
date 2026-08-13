@@ -104,7 +104,7 @@
           <span>02</span>
           <div>
             <h2>Material de impulso</h2>
-            <p>Material asignado y evidencias acumuladas.</p>
+            <p>Material asignado y evidencias registradas hoy.</p>
           </div>
         </div>
 
@@ -156,7 +156,7 @@
             </div>
 
             <div class="counter-card">
-              <small>Acumulado total</small>
+              <small>Acumulado de hoy</small>
               <strong>{{ material.acumulado }}</strong>
               <span>evidencias</span>
             </div>
@@ -192,14 +192,38 @@
 
               <div class="capture-copy">
                 <h3>Registra la evidencia</h3>
-                <p>La foto se tomara en el momento usando la camara del dispositivo.</p>
+                <p>Toma una foto o selecciona varias; cada imagen registra una entrega.</p>
               </div>
 
-              <button type="button" class="photo-button" [disabled]="uploadingPhoto" (click)="openCamera()">
-                <span class="camera-icon"></span>
-                {{ uploadingPhoto ? 'Guardando...' : (photoPreviewUrl ? 'Tomar otra foto' : 'Abrir camara') }}
-              </button>
+              <div class="capture-actions">
+                <button type="button" class="photo-button" [disabled]="uploadingPhoto" (click)="openCamera()">
+                  <span class="camera-icon"></span>
+                  {{ photoPreviewUrl ? 'Tomar otra' : 'Abrir camara' }}
+                </button>
+
+                <input
+                  #galleryInput
+                  class="photo-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  (change)="uploadSelectedPhotos($event)"
+                >
+                <button
+                  type="button"
+                  class="photo-button upload-button"
+                  [disabled]="uploadingPhoto"
+                  (click)="galleryInput.click()"
+                >
+                  <span class="upload-icon" aria-hidden="true"></span>
+                  Subir fotos
+                </button>
+              </div>
             </div>
+          }
+
+          @if (uploadProgress) {
+            <div class="upload-progress" role="status"><span class="spinner"></span>{{ uploadProgress }}</div>
           }
 
           @if (cameraError) {

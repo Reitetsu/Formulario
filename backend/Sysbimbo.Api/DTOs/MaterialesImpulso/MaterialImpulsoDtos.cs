@@ -29,6 +29,16 @@ public class FotoMaterialContenidoDto
     public string NombreArchivo { get; init; } = string.Empty;
 }
 
+public class FotoMaterialResumenDto
+{
+    public long FotoMaterialImpulsoId { get; init; }
+    public long MaterialImpulsoTiendaId { get; init; }
+    public string NombreArchivo { get; init; } = string.Empty;
+    public string TipoContenido { get; init; } = string.Empty;
+    public long TamanoBytes { get; init; }
+    public DateTime FechaCaptura { get; init; }
+}
+
 public class MaterialImpulsoAdminDto : MaterialImpulsoTiendaDto
 {
     public string NombreTienda { get; init; } = string.Empty;

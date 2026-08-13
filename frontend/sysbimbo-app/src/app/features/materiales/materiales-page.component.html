@@ -63,6 +63,9 @@
                   <td><span class="counter-chip">{{ item.acumulado }}</span></td>
                   <td class="text-end">
                     <div class="d-inline-flex gap-2">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="openEvidences(item)">
+                        Evidencias ({{ item.acumulado }})
+                      </button>
                       <button type="button" class="btn btn-sm btn-outline-primary" (click)="startEdit(item)">Editar</button>
                       <button type="button" class="btn btn-sm btn-outline-danger" (click)="delete(item)">Desactivar</button>
                     </div>
@@ -125,3 +128,60 @@
     </div>
   </div>
 </section>
+
+@if (evidenceMaterial) {
+  <div class="evidence-backdrop" role="presentation" (click)="closeEvidences()">
+    <section
+      class="evidence-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="evidence-dialog-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="evidence-header">
+        <div>
+          <span class="badge rounded-pill badge-soft mb-2">Evidencias fotograficas</span>
+          <h2 id="evidence-dialog-title" class="h4 mb-1">{{ evidenceMaterial.nombreMaterial }}</h2>
+          <p class="section-copy mb-0">{{ evidenceMaterial.nombreTienda }}</p>
+        </div>
+        <button
+          type="button"
+          class="btn-close"
+          aria-label="Cerrar"
+          [disabled]="deletingEvidenceId !== null"
+          (click)="closeEvidences()"
+        ></button>
+      </header>
+
+      <div class="evidence-body">
+        @if (loadingEvidences) {
+          <div class="muted-empty">Cargando evidencias...</div>
+        } @else if (evidences.length === 0) {
+          <div class="muted-empty">Este material no tiene evidencias fotograficas.</div>
+        } @else {
+          <div class="evidence-grid">
+            @for (evidence of evidences; track evidence.fotoMaterialImpulsoId) {
+              <article class="evidence-card">
+                <a [href]="photoUrl(evidence)" target="_blank" rel="noopener noreferrer" title="Abrir imagen">
+                  <img [src]="photoUrl(evidence)" [alt]="'Evidencia ' + evidence.nombreArchivo" loading="lazy">
+                </a>
+                <div class="evidence-info">
+                  <strong [title]="evidence.nombreArchivo">{{ evidence.nombreArchivo }}</strong>
+                  <small>{{ evidence.fechaCaptura | date:'dd/MM/yyyy HH:mm' }} · {{ formatBytes(evidence.tamanoBytes) }}</small>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    [disabled]="deletingEvidenceId !== null"
+                    (click)="deleteEvidence(evidence)"
+                  >
+                    {{ deletingEvidenceId === evidence.fotoMaterialImpulsoId ? 'Eliminando...' : 'Eliminar evidencia' }}
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+}

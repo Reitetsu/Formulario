@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../config/api.config';
 import {
   CreateMaterialImpulsoPayload,
   FotoMaterialImpulsoResult,
+  FotoMaterialResumen,
   MaterialImpulsoAdmin,
   MaterialImpulsoQuery,
   MaterialImpulsoTienda,
@@ -30,6 +31,22 @@ export class MaterialesImpulsoService {
     return this.http.post<FotoMaterialImpulsoResult>(
       `${this.endpoint}/${materialImpulsoTiendaId}/fotos`,
       body
+    );
+  }
+
+  getPhotos(materialImpulsoTiendaId: number): Observable<FotoMaterialResumen[]> {
+    return this.http.get<FotoMaterialResumen[]>(
+      `${this.endpoint}/${materialImpulsoTiendaId}/fotos`
+    );
+  }
+
+  getPhotoUrl(fotoId: number): string {
+    return `${this.endpoint}/fotos/${fotoId}`;
+  }
+
+  deletePhoto(materialImpulsoTiendaId: number, fotoId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.endpoint}/${materialImpulsoTiendaId}/fotos/${fotoId}`
     );
   }
 

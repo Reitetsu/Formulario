@@ -16,6 +16,15 @@ export interface FotoMaterialImpulsoResult {
   acumulado: number;
 }
 
+export interface FotoMaterialResumen {
+  fotoMaterialImpulsoId: number;
+  materialImpulsoTiendaId: number;
+  nombreArchivo: string;
+  tipoContenido: string;
+  tamanoBytes: number;
+  fechaCaptura: string;
+}
+
 export interface MaterialImpulsoAdmin extends MaterialImpulsoTienda {
   nombreTienda: string;
   formato: string | null;

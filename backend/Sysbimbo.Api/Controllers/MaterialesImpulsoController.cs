@@ -49,6 +49,29 @@ public class MaterialesImpulsoController(IMaterialImpulsoService materialImpulso
         return File(photo.Contenido, photo.TipoContenido);
     }
 
+    [HttpGet("{materialImpulsoTiendaId:long}/fotos")]
+    public async Task<ActionResult> GetPhotosAsync(
+        long materialImpulsoTiendaId,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await materialImpulsoService.GetPhotosAsync(
+            materialImpulsoTiendaId,
+            cancellationToken));
+    }
+
+    [HttpDelete("{materialImpulsoTiendaId:long}/fotos/{fotoId:long}")]
+    public async Task<IActionResult> DeletePhotoAsync(
+        long materialImpulsoTiendaId,
+        long fotoId,
+        CancellationToken cancellationToken)
+    {
+        await materialImpulsoService.DeletePhotoAsync(
+            materialImpulsoTiendaId,
+            fotoId,
+            cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("{id:long}", Name = GetByIdRouteName)]
     public async Task<ActionResult> GetByIdAsync(long id, CancellationToken cancellationToken)
     {

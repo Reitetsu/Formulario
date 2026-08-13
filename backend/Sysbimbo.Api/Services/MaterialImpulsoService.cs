@@ -279,6 +279,54 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
             ?? throw new KeyNotFoundException($"No se encontro la evidencia con id {fotoId}.");
     }
 
+    public async Task<IReadOnlyList<FotoMaterialResumenDto>> GetPhotosAsync(
+        long materialImpulsoTiendaId,
+        CancellationToken cancellationToken)
+    {
+        var materialExists = await dbContext.MaterialesImpulsoTienda
+            .AsNoTracking()
+            .AnyAsync(
+                material => material.MaterialImpulsoTiendaId == materialImpulsoTiendaId,
+                cancellationToken);
+
+        if (!materialExists)
+        {
+            throw new KeyNotFoundException(
+                $"No se encontro el material con id {materialImpulsoTiendaId}.");
+        }
+
+        return await dbContext.FotosMaterialImpulso
+            .AsNoTracking()
+            .Where(photo => photo.MaterialImpulsoTiendaId == materialImpulsoTiendaId)
+            .OrderByDescending(photo => photo.FechaCaptura)
+            .Select(photo => new FotoMaterialResumenDto
+            {
+                FotoMaterialImpulsoId = photo.FotoMaterialImpulsoId,
+                MaterialImpulsoTiendaId = photo.MaterialImpulsoTiendaId,
+                NombreArchivo = photo.NombreArchivo,
+                TipoContenido = photo.TipoContenido,
+                TamanoBytes = photo.TamanoBytes,
+                FechaCaptura = photo.FechaCaptura
+            })
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task DeletePhotoAsync(
+        long materialImpulsoTiendaId,
+        long fotoId,
+        CancellationToken cancellationToken)
+    {
+        var photo = await dbContext.FotosMaterialImpulso
+            .SingleOrDefaultAsync(
+                item => item.MaterialImpulsoTiendaId == materialImpulsoTiendaId &&
+                        item.FotoMaterialImpulsoId == fotoId,
+                cancellationToken)
+            ?? throw new KeyNotFoundException($"No se encontro la evidencia con id {fotoId}.");
+
+        dbContext.FotosMaterialImpulso.Remove(photo);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     private static string NormalizeStoreKey(string tiendaCadenaKey)
     {
         var key = tiendaCadenaKey.Trim();

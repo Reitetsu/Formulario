@@ -4,7 +4,7 @@ import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angul
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, combineLatest, debounceTime, distinctUntilChanged, finalize, of, startWith, switchMap } from 'rxjs';
-import { MaterialImpulsoAdmin } from '../../core/models/material-impulso.model';
+import { FotoMaterialResumen, MaterialImpulsoAdmin } from '../../core/models/material-impulso.model';
 import { PagedResult } from '../../core/models/paged-result.model';
 import { Tienda } from '../../core/models/tienda.model';
 import { AlertService } from '../../core/services/alert.service';
@@ -56,6 +56,10 @@ export class MaterialesPageComponent implements OnInit {
   protected dropdownOpen = false;
   protected isEditing = false;
   protected selectedId: number | null = null;
+  protected evidenceMaterial: MaterialImpulsoAdmin | null = null;
+  protected evidences: FotoMaterialResumen[] = [];
+  protected loadingEvidences = false;
+  protected deletingEvidenceId: number | null = null;
 
   ngOnInit(): void {
     this.editorForm.controls.marca.valueChanges
@@ -246,6 +250,95 @@ export class MaterialesPageComponent implements OnInit {
           this.cdr.markForCheck();
         }
       });
+  }
+
+  protected openEvidences(item: MaterialImpulsoAdmin): void {
+    this.evidenceMaterial = item;
+    this.evidences = [];
+    this.loadingEvidences = true;
+
+    this.materialesService.getPhotos(item.materialImpulsoTiendaId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.loadingEvidences = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: evidences => {
+          if (this.evidenceMaterial?.materialImpulsoTiendaId === item.materialImpulsoTiendaId) {
+            this.evidences = evidences;
+          }
+          this.cdr.markForCheck();
+        },
+        error: error => {
+          this.handleError(error, 'No fue posible cargar las evidencias.');
+          this.closeEvidences();
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  protected closeEvidences(): void {
+    if (this.deletingEvidenceId !== null) return;
+    this.evidenceMaterial = null;
+    this.evidences = [];
+  }
+
+  protected deleteEvidence(evidence: FotoMaterialResumen): void {
+    const material = this.evidenceMaterial;
+    if (!material || this.deletingEvidenceId !== null) return;
+
+    if (!confirm(`Se eliminara definitivamente la evidencia "${evidence.nombreArchivo}". Deseas continuar?`)) {
+      return;
+    }
+
+    this.deletingEvidenceId = evidence.fotoMaterialImpulsoId;
+    this.materialesService
+      .deletePhoto(material.materialImpulsoTiendaId, evidence.fotoMaterialImpulsoId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.deletingEvidenceId = null;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.evidences = this.evidences.filter(
+            item => item.fotoMaterialImpulsoId !== evidence.fotoMaterialImpulsoId
+          );
+          this.pagedResult = {
+            ...this.pagedResult,
+            items: this.pagedResult.items.map(item =>
+              item.materialImpulsoTiendaId === material.materialImpulsoTiendaId
+                ? { ...item, acumulado: Math.max(0, item.acumulado - 1) }
+                : item
+            )
+          };
+          this.evidenceMaterial = {
+            ...material,
+            acumulado: Math.max(0, material.acumulado - 1)
+          };
+          this.alertService.success('Evidencia fotografica eliminada correctamente.');
+          this.cdr.markForCheck();
+        },
+        error: error => {
+          this.handleError(error, 'No fue posible eliminar la evidencia.');
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  protected photoUrl(evidence: FotoMaterialResumen): string {
+    return this.materialesService.getPhotoUrl(evidence.fotoMaterialImpulsoId);
+  }
+
+  protected formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   protected storeLabel(store: Tienda): string {

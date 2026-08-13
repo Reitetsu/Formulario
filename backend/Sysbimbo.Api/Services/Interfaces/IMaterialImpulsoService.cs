@@ -29,4 +29,11 @@ public interface IMaterialImpulsoService
         IFormFile foto,
         CancellationToken cancellationToken);
     Task<FotoMaterialContenidoDto> GetPhotoAsync(long fotoId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<FotoMaterialResumenDto>> GetPhotosAsync(
+        long materialImpulsoTiendaId,
+        CancellationToken cancellationToken);
+    Task DeletePhotoAsync(
+        long materialImpulsoTiendaId,
+        long fotoId,
+        CancellationToken cancellationToken);
 }

@@ -16,6 +16,7 @@ REMOTE_DIR = os.environ.get("VPS_REMOTE_DIR", "/root/formulario")
 POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
 SEED_ADMIN_PASSWORD = os.environ.get("SEED_ADMIN_PASSWORD")
+AUTH_REQUIRE_STRONG_PASSWORD = os.environ.get("AUTH_REQUIRE_STRONG_PASSWORD")
 
 
 def connect_ssh():
@@ -155,6 +156,11 @@ def main():
         remote_env["POSTGRES_PASSWORD"] = POSTGRES_PASSWORD
     if SEED_ADMIN_PASSWORD:
         remote_env["SEED_ADMIN_PASSWORD"] = SEED_ADMIN_PASSWORD
+    if AUTH_REQUIRE_STRONG_PASSWORD is not None:
+        normalized_password_policy = AUTH_REQUIRE_STRONG_PASSWORD.strip().lower()
+        if normalized_password_policy not in {"true", "false"}:
+            raise ValueError("AUTH_REQUIRE_STRONG_PASSWORD debe ser true o false.")
+        remote_env["AUTH_REQUIRE_STRONG_PASSWORD"] = normalized_password_policy
 
     required_keys = ["POSTGRES_PASSWORD"]
     if deploy_backend:

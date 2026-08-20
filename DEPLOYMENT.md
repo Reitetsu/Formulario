@@ -20,11 +20,14 @@ $env:VPS_SSH_KEY = "C:\ruta\privada\sysbimbo_vps"
 $env:POSTGRES_USER = "postgres"
 $env:POSTGRES_PASSWORD = "CLAVE_PRIVADA"
 $env:SEED_ADMIN_PASSWORD = "CLAVE_INICIAL_SEGURA_PARA_ADMIN"
+$env:AUTH_REQUIRE_STRONG_PASSWORD = "false"
 ```
 
 `POSTGRES_PASSWORD` solo es necesario la primera vez o cuando se rota la clave.
 `SEED_ADMIN_PASSWORD` se usa para crear idempotentemente el usuario `admin` y
 se almacena solo en el `.env` privado del VPS.
+`AUTH_REQUIRE_STRONG_PASSWORD=false` permite claves simples durante esta etapa.
+Para recuperar las reglas fuertes posteriormente se cambia a `true`.
 El script crea `/root/formulario/.env` con permisos `600`. En despliegues
 posteriores puede omitirse y se reutilizara el archivo privado del VPS.
 

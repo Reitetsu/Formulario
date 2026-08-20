@@ -10,6 +10,9 @@ using Sysbimbo.Api.Services;
 using Sysbimbo.Api.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+var requireStrongPassword = builder.Configuration.GetValue(
+    "Authentication:RequireStrongPassword",
+    false);
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -30,11 +33,12 @@ builder.Services.AddDbContext<FormularioDbContext>(options =>
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
     {
-        options.Password.RequiredLength = 8;
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireNonAlphanumeric = true;
+        options.Password.RequiredLength = requireStrongPassword ? 8 : 1;
+        options.Password.RequiredUniqueChars = 1;
+        options.Password.RequireDigit = requireStrongPassword;
+        options.Password.RequireLowercase = requireStrongPassword;
+        options.Password.RequireUppercase = requireStrongPassword;
+        options.Password.RequireNonAlphanumeric = requireStrongPassword;
         options.Lockout.AllowedForNewUsers = true;
         options.Lockout.MaxFailedAccessAttempts = 5;
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);

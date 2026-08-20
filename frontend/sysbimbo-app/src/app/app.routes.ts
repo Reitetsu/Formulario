@@ -10,8 +10,9 @@ import { HabilitarTiendaComponent } from './features/habilitar-tienda/habilitar-
 import { MaterialesPageComponent } from './features/materiales/materiales-page.component';
 
 export const routes: Routes = [
-  { path: 'habilitar-tienda', component: HabilitarTiendaComponent },
-  { path: '', redirectTo: 'habilitar-tienda', pathMatch: 'full' },
+  { path: 'canjes_Agosto', component: HabilitarTiendaComponent },
+  { path: 'habilitar-tienda', redirectTo: 'canjes_Agosto', pathMatch: 'full' },
+  { path: '', redirectTo: 'canjes_Agosto', pathMatch: 'full' },
   {
     path: '',
     component: ShellComponent,
@@ -25,5 +26,5 @@ export const routes: Routes = [
       { path: 'programaciones', component: ProgramacionesPageComponent }
     ]
   },
-  { path: '**', redirectTo: 'habilitar-tienda' }
+  { path: '**', redirectTo: 'canjes_Agosto' }
 ];

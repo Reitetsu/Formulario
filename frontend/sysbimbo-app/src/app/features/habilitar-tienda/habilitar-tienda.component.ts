@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, DestroyRef, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import {
   catchError,
   combineLatest,
@@ -25,7 +26,7 @@ import { TiendasService } from '../../core/services/tiendas.service';
 @Component({
   selector: 'app-habilitar-tienda',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './habilitar-tienda.component.html',
   styleUrl: './habilitar-tienda.component.css'
 })

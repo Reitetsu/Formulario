@@ -1,6 +1,9 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sysbimbo.Api.Data;
 using Sysbimbo.Api.Middleware;
+using Sysbimbo.Api.Models.Identity;
 using Sysbimbo.Api.Repositories;
 using Sysbimbo.Api.Repositories.Interfaces;
 using Sysbimbo.Api.Services;
@@ -23,6 +26,47 @@ builder.Services.AddDbContext<FormularioDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("FormularioPostgres"),
         npgsql => npgsql.EnableRetryOnFailure(3)));
+
+builder.Services
+    .AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = true;
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+        options.User.RequireUniqueEmail = false;
+    })
+    .AddRoles<ApplicationRole>()
+    .AddEntityFrameworkStores<FormularioDbContext>();
+
+builder.Services
+    .AddAuthentication(IdentityConstants.ApplicationScheme)
+    .AddCookie(IdentityConstants.ApplicationScheme, options =>
+    {
+        options.Cookie.Name = "sysbimbo.session";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = builder.Environment.IsProduction()
+            ? CookieSecurePolicy.Always
+            : CookieSecurePolicy.SameAsRequest;
+        options.SlidingExpiration = false;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+    });
+builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<ITiendaRepository, TiendaRepository>();
 builder.Services.AddScoped<ISkuRepository, SkuRepository>();
@@ -51,7 +95,8 @@ builder.Services.AddCors(options =>
                 "https://innovamsp.lat",
                 "https://www.innovamsp.lat")
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -84,6 +129,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseCors("AngularClient");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

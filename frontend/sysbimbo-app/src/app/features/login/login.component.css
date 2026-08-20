@@ -1,0 +1,143 @@
+:host {
+  display: block;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.login-page {
+  align-items: center;
+  background:
+    radial-gradient(circle at 15% 0, rgba(201, 164, 83, 0.13), transparent 30rem),
+    #080807;
+  color: #f3ede2;
+  display: flex;
+  font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.login-card {
+  background: linear-gradient(145deg, #171714, #0e0e0d);
+  border: 1px solid rgba(201, 164, 83, 0.25);
+  border-radius: 18px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
+  max-width: 420px;
+  padding: clamp(1.4rem, 6vw, 2.4rem);
+  width: 100%;
+}
+
+.back-link {
+  color: #918b7f;
+  display: inline-block;
+  font-size: 0.75rem;
+  margin-bottom: 1.7rem;
+  text-decoration: none;
+}
+
+.login-heading {
+  text-align: center;
+}
+
+.brand-seal {
+  align-items: center;
+  border: 1px solid #c9a453;
+  border-radius: 50%;
+  color: #e3c171;
+  display: flex;
+  font-family: Georgia, serif;
+  height: 3.3rem;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  width: 3.3rem;
+}
+
+.eyebrow {
+  color: #c9a453;
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-family: Georgia, serif;
+  font-size: 2rem;
+  font-weight: 400;
+  margin: 0.35rem 0 0.55rem;
+}
+
+.login-heading p,
+.login-card > small {
+  color: #8b877e;
+}
+
+.login-heading p {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin: 0 0 1.5rem;
+}
+
+form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+label {
+  color: #a49e92;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-top: 0.35rem;
+  text-transform: uppercase;
+}
+
+input {
+  background: #090908;
+  border: 1px solid #39362e;
+  border-radius: 9px;
+  color: #f3ede2;
+  min-height: 3rem;
+  outline: none;
+  padding: 0 0.9rem;
+}
+
+input:focus {
+  border-color: #a98b4d;
+  box-shadow: 0 0 0 3px rgba(201, 164, 83, 0.1);
+}
+
+button {
+  background: linear-gradient(135deg, #d4ae59, #b78e3d);
+  border: 1px solid #dfbc6d;
+  border-radius: 9px;
+  color: #0b0b09;
+  font-weight: 800;
+  margin-top: 0.8rem;
+  min-height: 3rem;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.login-error {
+  background: rgba(160, 75, 63, 0.1);
+  border: 1px solid rgba(160, 75, 63, 0.25);
+  border-radius: 8px;
+  color: #db9d94;
+  font-size: 0.72rem;
+  margin: 0.4rem 0 0;
+  padding: 0.65rem;
+}
+
+.login-card > small {
+  display: block;
+  font-size: 0.65rem;
+  margin-top: 1.2rem;
+  text-align: center;
+}

@@ -8,10 +8,15 @@ import { CuotasPageComponent } from './features/cuotas/cuotas-page.component';
 import { ProgramacionesPageComponent } from './features/programaciones/programaciones-page.component';
 import { HabilitarTiendaComponent } from './features/habilitar-tienda/habilitar-tienda.component';
 import { MaterialesPageComponent } from './features/materiales/materiales-page.component';
+import { LoginComponent } from './features/login/login.component';
+import { SupervisoresComponent } from './features/supervisores/supervisores.component';
+import { supervisorGuard } from './core/guards/supervisor.guard';
 
 export const routes: Routes = [
   { path: 'canjes_Agosto', component: HabilitarTiendaComponent },
   { path: 'habilitar-tienda', redirectTo: 'canjes_Agosto', pathMatch: 'full' },
+  { path: 'login', component: LoginComponent },
+  { path: 'supervisores', component: SupervisoresComponent, canActivate: [supervisorGuard] },
   { path: '', redirectTo: 'canjes_Agosto', pathMatch: 'full' },
   {
     path: '',

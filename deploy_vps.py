@@ -15,6 +15,7 @@ SSH_KEY = os.path.expanduser(os.environ["VPS_SSH_KEY"]) if os.environ.get("VPS_S
 REMOTE_DIR = os.environ.get("VPS_REMOTE_DIR", "/root/formulario")
 POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+SEED_ADMIN_PASSWORD = os.environ.get("SEED_ADMIN_PASSWORD")
 
 
 def connect_ssh():
@@ -137,23 +138,42 @@ def main():
         sftp.put(local_path, remote_path, callback=cb)
 
     remote_env_path = f"{REMOTE_DIR}/.env"
+    remote_env = {}
+    try:
+        with sftp.open(remote_env_path, "r") as env_file:
+            for raw_line in env_file.read().decode("utf-8").splitlines():
+                line = raw_line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                remote_env[key.strip()] = value
+    except IOError:
+        pass
+
     if POSTGRES_PASSWORD:
-        if "\n" in POSTGRES_PASSWORD or "\r" in POSTGRES_PASSWORD:
-            raise ValueError("POSTGRES_PASSWORD contiene caracteres no permitidos.")
-        with sftp.open(remote_env_path, "w") as env_file:
-            env_file.write(
-                f"POSTGRES_USER={POSTGRES_USER}\n"
-                f"POSTGRES_PASSWORD={POSTGRES_PASSWORD}\n"
-            )
-        sftp.chmod(remote_env_path, 0o600)
-        print("Archivo .env privado actualizado en el VPS.")
-    else:
-        try:
-            sftp.stat(remote_env_path)
-        except IOError as error:
-            raise RuntimeError(
-                "El VPS no tiene .env. Configura POSTGRES_PASSWORD una vez antes de desplegar."
-            ) from error
+        remote_env["POSTGRES_USER"] = POSTGRES_USER
+        remote_env["POSTGRES_PASSWORD"] = POSTGRES_PASSWORD
+    if SEED_ADMIN_PASSWORD:
+        remote_env["SEED_ADMIN_PASSWORD"] = SEED_ADMIN_PASSWORD
+
+    required_keys = ["POSTGRES_PASSWORD"]
+    if deploy_backend:
+        required_keys.append("SEED_ADMIN_PASSWORD")
+    missing_keys = [key for key in required_keys if not remote_env.get(key)]
+    if missing_keys:
+        raise RuntimeError(
+            "Faltan variables privadas para desplegar: " + ", ".join(missing_keys)
+        )
+
+    for key, value in remote_env.items():
+        if "\n" in value or "\r" in value:
+            raise ValueError(f"{key} contiene caracteres no permitidos.")
+
+    with sftp.open(remote_env_path, "w") as env_file:
+        for key, value in remote_env.items():
+            env_file.write(f"{key}={value}\n")
+    sftp.chmod(remote_env_path, 0o600)
+    print("Archivo .env privado validado en el VPS.")
 
     sftp.close()
     print("Transferencia de archivos completada exitosamente.")

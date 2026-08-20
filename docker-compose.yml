@@ -33,6 +33,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: "Production"
       ConnectionStrings__FormularioPostgres: "Host=postgres;Port=5432;Database=sysbimbo_formulario;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD};"
+      SeedAdmin__Password: "${SEED_ADMIN_PASSWORD:?SEED_ADMIN_PASSWORD debe configurarse en .env}"
       DOTNET_gcServer: "0"
     expose:
       - "8080"

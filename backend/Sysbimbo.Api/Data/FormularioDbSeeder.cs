@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sysbimbo.Api.Models.Entities;
+using Sysbimbo.Api.Models.Identity;
 
 namespace Sysbimbo.Api.Data;
 
@@ -9,6 +11,8 @@ namespace Sysbimbo.Api.Data;
 /// </summary>
 public sealed class FormularioDbSeeder(
     FormularioDbContext dbContext,
+    UserManager<ApplicationUser> userManager,
+    IConfiguration configuration,
     ILogger<FormularioDbSeeder> logger)
 {
     public async Task SeedAsync(CancellationToken cancellationToken = default)
@@ -18,6 +22,7 @@ public sealed class FormularioDbSeeder(
         var formulario = await SeedFormularioAsync(cliente, cancellationToken);
         await SeedOptionsAsync(formulario, cancellationToken);
         await SeedClientStoresAsync(cliente, cancellationToken);
+        await SeedAdministratorAsync(cliente, formulario, cancellationToken);
     }
 
     private async Task SeedRolesAsync(CancellationToken cancellationToken)
@@ -76,12 +81,21 @@ public sealed class FormularioDbSeeder(
 
         if (formulario is not null)
         {
+            var expectedRoute = FormularioSeedCatalog.CurrentControlMaterialRoute;
+            if (!string.Equals(formulario.Ruta, expectedRoute, StringComparison.Ordinal))
+            {
+                formulario.Ruta = expectedRoute;
+                await dbContext.SaveChangesAsync(cancellationToken);
+                logger.LogInformation("Ruta del formulario de control de material actualizada.");
+            }
+
             return formulario;
         }
 
         formulario = FormularioSeedCatalog.CreateControlMaterial();
         formulario.FormularioId = 0;
         formulario.ClienteId = cliente.ClienteId;
+        formulario.Ruta = FormularioSeedCatalog.CurrentControlMaterialRoute;
         formulario.FechaCreacion = DateTime.UtcNow;
         dbContext.Formularios.Add(formulario);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -163,5 +177,109 @@ public sealed class FormularioDbSeeder(
         logger.LogInformation(
             "Tiendas existentes asociadas al cliente BIMBO: {Count}.",
             missingAssignments.Length);
+    }
+
+    private async Task SeedAdministratorAsync(
+        Cliente cliente,
+        Formulario formulario,
+        CancellationToken cancellationToken)
+    {
+        const string userName = "admin";
+        const string roleName = "Administrador";
+
+        var administrator = await userManager.FindByNameAsync(userName);
+        if (administrator is null)
+        {
+            var password = configuration["SeedAdmin:Password"];
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                throw new InvalidOperationException(
+                    "SeedAdmin:Password es obligatorio para crear el usuario administrador inicial.");
+            }
+
+            administrator = new ApplicationUser
+            {
+                Id = Guid.NewGuid(),
+                UserName = userName,
+                NombreCompleto = "Administrador",
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow,
+                EmailConfirmed = true,
+                LockoutEnabled = true
+            };
+
+            EnsureSucceeded(
+                await userManager.CreateAsync(administrator, password),
+                "crear el usuario administrador inicial");
+            logger.LogInformation("Usuario administrador inicial agregado.");
+        }
+
+        if (!await userManager.IsInRoleAsync(administrator, roleName))
+        {
+            EnsureSucceeded(
+                await userManager.AddToRoleAsync(administrator, roleName),
+                "asignar el rol Administrador al usuario inicial");
+        }
+
+        var roleId = await dbContext.Roles
+            .Where(role => role.NormalizedName == roleName.ToUpperInvariant())
+            .Select(role => role.Id)
+            .SingleAsync(cancellationToken);
+        var now = DateTime.UtcNow;
+
+        if (!await dbContext.UsuariosClientes.AnyAsync(
+                item => item.UsuarioId == administrator.Id && item.ClienteId == cliente.ClienteId,
+                cancellationToken))
+        {
+            dbContext.UsuariosClientes.Add(new UsuarioCliente
+            {
+                UsuarioId = administrator.Id,
+                ClienteId = cliente.ClienteId,
+                Activo = true,
+                FechaAsignacion = now
+            });
+        }
+
+        if (!await dbContext.UsuariosClientesRoles.AnyAsync(
+                item => item.UsuarioId == administrator.Id &&
+                        item.ClienteId == cliente.ClienteId &&
+                        item.RolId == roleId,
+                cancellationToken))
+        {
+            dbContext.UsuariosClientesRoles.Add(new UsuarioClienteRol
+            {
+                UsuarioId = administrator.Id,
+                ClienteId = cliente.ClienteId,
+                RolId = roleId,
+                FechaAsignacion = now
+            });
+        }
+
+        if (!await dbContext.UsuariosFormularios.AnyAsync(
+                item => item.UsuarioId == administrator.Id &&
+                        item.FormularioId == formulario.FormularioId,
+                cancellationToken))
+        {
+            dbContext.UsuariosFormularios.Add(new UsuarioFormulario
+            {
+                UsuarioId = administrator.Id,
+                FormularioId = formulario.FormularioId,
+                Activo = true,
+                FechaAsignacion = now
+            });
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static void EnsureSucceeded(IdentityResult result, string operation)
+    {
+        if (result.Succeeded)
+        {
+            return;
+        }
+
+        var errors = string.Join("; ", result.Errors.Select(error => error.Description));
+        throw new InvalidOperationException($"No fue posible {operation}: {errors}");
     }
 }

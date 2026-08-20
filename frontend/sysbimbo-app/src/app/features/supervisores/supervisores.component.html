@@ -1,0 +1,46 @@
+<main class="supervisor-page">
+  <section class="supervisor-shell">
+    <header>
+      <div class="identity">
+        <span class="brand-seal">SB</span>
+        <div>
+          <span class="eyebrow">Área privada</span>
+          <h1>Panel de supervisores</h1>
+        </div>
+      </div>
+
+      <button type="button" (click)="logout()" [disabled]="loggingOut">
+        {{ loggingOut ? 'Cerrando...' : 'Cerrar sesión' }}
+      </button>
+    </header>
+
+    @if (user$ | async; as user) {
+      <section class="welcome-card">
+        <span class="user-icon" aria-hidden="true"></span>
+        <div>
+          <small>Sesión iniciada</small>
+          <h2>{{ user.nombreCompleto || user.nombreUsuario }}</h2>
+          <p>{{ user.roles.join(' · ') }}</p>
+        </div>
+      </section>
+    }
+
+    <section class="module-grid">
+      <article>
+        <span>01</span>
+        <h3>Personal asignado</h3>
+        <p>Aquí se mostrará el personal y las tiendas bajo responsabilidad del supervisor.</p>
+        <small>Próxima configuración</small>
+      </article>
+
+      <article>
+        <span>02</span>
+        <h3>Actividad del día</h3>
+        <p>Resumen diario de asistencias, objetivos y evidencias registradas.</p>
+        <small>Próxima configuración</small>
+      </article>
+    </section>
+
+    <a class="form-link" routerLink="/canjes_Agosto">Ir al formulario de canjes</a>
+  </section>
+</main>

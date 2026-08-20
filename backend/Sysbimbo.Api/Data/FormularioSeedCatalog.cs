@@ -13,6 +13,7 @@ internal static class FormularioSeedCatalog
     internal const long ControlMaterialFormularioId = 1;
     internal const string BimboCodigo = "BIMBO";
     internal const string ControlMaterialCodigo = "CONTROL_MATERIAL_IMPULSO";
+    internal const string CurrentControlMaterialRoute = "/canjes_Agosto";
 
     internal static ApplicationRole[] CreateRoles() =>
     [

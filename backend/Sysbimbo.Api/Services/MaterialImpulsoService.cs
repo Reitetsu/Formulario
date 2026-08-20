@@ -351,6 +351,7 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
 
     public async Task<IReadOnlyList<FotoMaterialResumenDto>> GetPhotosAsync(
         long materialImpulsoTiendaId,
+        bool soloHoy,
         CancellationToken cancellationToken)
     {
         var materialExists = await dbContext.MaterialesImpulsoTienda
@@ -365,9 +366,17 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
                 $"No se encontro el material con id {materialImpulsoTiendaId}.");
         }
 
-        return await dbContext.FotosMaterialImpulso
+        var query = dbContext.FotosMaterialImpulso
             .AsNoTracking()
-            .Where(photo => photo.MaterialImpulsoTiendaId == materialImpulsoTiendaId)
+            .Where(photo => photo.MaterialImpulsoTiendaId == materialImpulsoTiendaId);
+        if (soloHoy)
+        {
+            var (dayStartUtc, dayEndUtc) = GetCurrentBusinessDayUtcRange();
+            query = query.Where(photo =>
+                photo.FechaCaptura >= dayStartUtc && photo.FechaCaptura < dayEndUtc);
+        }
+
+        return await query
             .OrderByDescending(photo => photo.FechaCaptura)
             .Select(photo => new FotoMaterialResumenDto
             {

@@ -36,6 +36,7 @@ public interface IMaterialImpulsoService
     Task<FotoMaterialContenidoDto> GetPhotoAsync(long fotoId, CancellationToken cancellationToken);
     Task<IReadOnlyList<FotoMaterialResumenDto>> GetPhotosAsync(
         long materialImpulsoTiendaId,
+        bool soloHoy,
         CancellationToken cancellationToken);
     Task DeletePhotoAsync(
         long materialImpulsoTiendaId,

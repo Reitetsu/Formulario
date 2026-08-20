@@ -54,10 +54,12 @@ public class MaterialesImpulsoController(IMaterialImpulsoService materialImpulso
     [HttpGet("{materialImpulsoTiendaId:long}/fotos")]
     public async Task<ActionResult> GetPhotosAsync(
         long materialImpulsoTiendaId,
+        [FromQuery] bool soloHoy,
         CancellationToken cancellationToken)
     {
         return Ok(await materialImpulsoService.GetPhotosAsync(
             materialImpulsoTiendaId,
+            soloHoy,
             cancellationToken));
     }
 

@@ -269,6 +269,35 @@ public sealed class FormularioDbSeeder(
             });
         }
 
+        var hasStoreAssignments = await dbContext.UsuariosTiendas
+            .AnyAsync(item => item.UsuarioId == administrator.Id, cancellationToken);
+        if (!hasStoreAssignments)
+        {
+            var tottusStoreKeys = await dbContext.Tiendas
+                .AsNoTracking()
+                .Where(store => store.Formato != null && store.Formato.ToUpper() == "TOTTUS")
+                .Select(store => store.TiendaCadenaKey)
+                .ToArrayAsync(cancellationToken);
+            var assignmentDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            dbContext.UsuariosTiendas.AddRange(tottusStoreKeys.Select(storeKey => new UsuarioTienda
+            {
+                UsuarioId = administrator.Id,
+                ClienteId = cliente.ClienteId,
+                TiendaCadenaKey = storeKey,
+                TipoAsignacion = "SUPERVISOR",
+                FechaInicio = assignmentDate,
+                Activo = true
+            }));
+
+            if (tottusStoreKeys.Length > 0)
+            {
+                logger.LogInformation(
+                    "Tiendas TOTTUS asignadas inicialmente al administrador: {Count}.",
+                    tottusStoreKeys.Length);
+            }
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 

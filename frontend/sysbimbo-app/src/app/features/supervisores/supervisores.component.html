@@ -1,6 +1,6 @@
 <main class="supervisor-page">
   <section class="supervisor-shell">
-    <header>
+    <header class="page-header">
       <div class="identity">
         <span class="brand-seal">SB</span>
         <div>
@@ -8,8 +8,7 @@
           <h1>Panel de supervisores</h1>
         </div>
       </div>
-
-      <button type="button" (click)="logout()" [disabled]="loggingOut">
+      <button class="outline-button" type="button" (click)="logout()" [disabled]="loggingOut">
         {{ loggingOut ? 'Cerrando...' : 'Cerrar sesión' }}
       </button>
     </header>
@@ -17,30 +16,113 @@
     @if (user$ | async; as user) {
       <section class="welcome-card">
         <span class="user-icon" aria-hidden="true"></span>
-        <div>
-          <small>Sesión iniciada</small>
-          <h2>{{ user.nombreCompleto || user.nombreUsuario }}</h2>
-          <p>{{ user.roles.join(' · ') }}</p>
-        </div>
+        <div><small>Sesión iniciada</small><h2>{{ user.nombreCompleto || user.nombreUsuario }}</h2><p>{{ user.roles.join(' · ') }}</p></div>
       </section>
     }
 
-    <section class="module-grid">
-      <article>
-        <span>01</span>
-        <h3>Personal asignado</h3>
-        <p>Aquí se mostrará el personal y las tiendas bajo responsabilidad del supervisor.</p>
-        <small>Próxima configuración</small>
-      </article>
+    @if (errorMessage) { <div class="status-message error" role="alert">{{ errorMessage }}</div> }
 
-      <article>
-        <span>02</span>
-        <h3>Actividad del día</h3>
-        <p>Resumen diario de asistencias, objetivos y evidencias registradas.</p>
-        <small>Próxima configuración</small>
-      </article>
-    </section>
+    @if (loading) {
+      <section class="loading-card">Cargando actividad del día...</section>
+    } @else if (panel) {
+      <section class="attendance-card">
+        <div class="section-heading">
+          <div><span class="eyebrow">01 · Asistencia</span><h2>Jornada de hoy</h2><p>{{ formatDate(panel.fecha) }}</p></div>
+          @if (!editingAttendance) { <button class="outline-button compact" type="button" (click)="editAttendance()">Editar</button> }
+        </div>
+
+        @if (editingAttendance) {
+          <div class="attendance-form">
+            <label>Hora de ingreso<input type="time" [(ngModel)]="attendanceEntry"></label>
+            <label>Hora de salida<input type="time" [(ngModel)]="attendanceExit"></label>
+            <div class="form-actions">
+              <button class="outline-button compact" type="button" (click)="cancelAttendance()">Cancelar</button>
+              <button class="gold-button compact" type="button" (click)="saveAttendance()" [disabled]="!attendanceEntry || savingAttendance">
+                {{ savingAttendance ? 'Guardando...' : 'Guardar' }}
+              </button>
+            </div>
+          </div>
+        } @else if (panel.asistencia; as attendance) {
+          <div class="attendance-summary">
+            <div><small>Ingreso</small><strong>{{ formatTime(attendance.horaIngreso) }}</strong></div>
+            <div><small>Salida</small><strong>{{ formatTime(attendance.horaSalida) }}</strong></div>
+            <div><small>Estado</small><strong class="status-pill">{{ attendance.estado }}</strong></div>
+          </div>
+        } @else {
+          <p class="empty-message">No se registró una jornada para hoy.</p>
+        }
+      </section>
+
+      <section class="stores-section">
+        <div class="section-heading stores-heading">
+          <div><span class="eyebrow">02 · Tiendas asignadas</span><h2>Canjes y materiales</h2></div>
+          <span class="store-count">{{ panel.tiendas.length }} tiendas</span>
+        </div>
+        @if (materialMessage) { <div class="status-message">{{ materialMessage }}</div> }
+
+        @for (store of panel.tiendas; track store.tiendaCadenaKey) {
+          <article class="store-card">
+            <div class="store-header">
+              <div><span class="format-label">{{ store.formato || 'Sin formato' }}</span><h3>{{ store.nombreTienda }}</h3></div>
+              <div class="store-total"><small>Canjes de hoy</small><strong>{{ store.totalCanjesHoy }}</strong></div>
+            </div>
+
+            @if (store.materiales.length) {
+              <div class="materials-list">
+                @for (material of store.materiales; track material.materialImpulsoTiendaId) {
+                  <div class="material-row">
+                    <div class="material-name">
+                      <span class="material-seal">M</span>
+                      <div><strong>{{ material.nombreMaterial }}</strong><small>Objetivo diario: {{ material.cuotaDiaria }}</small></div>
+                    </div>
+                    <label class="exchange-editor">
+                      <span>Canjes</span>
+                      <input type="number" min="0" step="1" [(ngModel)]="exchangeDrafts[material.materialImpulsoTiendaId]">
+                    </label>
+                    <button class="gold-button compact save-button" type="button" (click)="saveExchanges(store, material)" [disabled]="savingMaterialId !== null">
+                      {{ savingMaterialId === material.materialImpulsoTiendaId ? 'Guardando...' : 'Guardar' }}
+                    </button>
+                    <button class="evidence-button" type="button" (click)="showEvidence(store, material)" [disabled]="material.evidenciasHoy < 1">
+                      <strong>{{ material.evidenciasHoy }}</strong><span>Evidencias</span>
+                    </button>
+                  </div>
+                }
+              </div>
+            } @else { <p class="empty-message">Esta tienda no tiene materiales activos.</p> }
+          </article>
+        } @empty {
+          <section class="empty-card">No hay tiendas asignadas a este usuario. La asignación se gestionará desde el panel de control.</section>
+        }
+      </section>
+    }
 
     <a class="form-link" routerLink="/canjes_Agosto">Ir al formulario de canjes</a>
   </section>
+
+  @if (galleryOpen) {
+    <div class="gallery-backdrop" (click)="closeGallery()">
+      <section class="gallery-modal" role="dialog" aria-modal="true" aria-labelledby="gallery-title" (click)="$event.stopPropagation()">
+        <div class="gallery-header">
+          <div><span class="eyebrow">Evidencias de hoy</span><h2 id="gallery-title">{{ galleryTitle }}</h2></div>
+          <button class="close-button" type="button" aria-label="Cerrar galería" (click)="closeGallery()">×</button>
+        </div>
+        @if (galleryLoading) {
+          <p class="empty-message">Cargando fotografías...</p>
+        } @else if (galleryError) {
+          <p class="status-message error">{{ galleryError }}</p>
+        } @else {
+          <div class="photo-grid">
+            @for (photo of galleryPhotos; track photo.fotoMaterialImpulsoId) {
+              <figure>
+                <a [href]="photoUrl(photo.fotoMaterialImpulsoId)" target="_blank" rel="noopener">
+                  <img [src]="photoUrl(photo.fotoMaterialImpulsoId)" [alt]="photo.nombreArchivo" loading="lazy">
+                </a>
+                <figcaption>{{ formatTime(photo.fechaCaptura) }}</figcaption>
+              </figure>
+            } @empty { <p class="empty-message">No hay fotografías registradas hoy.</p> }
+          </div>
+        }
+      </section>
+    </div>
+  }
 </main>

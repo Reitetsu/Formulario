@@ -85,6 +85,7 @@ builder.Services.AddScoped<ICampaniaProgramacionService, CampaniaProgramacionSer
 builder.Services.AddScoped<ICuotaService, CuotaService>();
 builder.Services.AddScoped<IProgramacionService, ProgramacionService>();
 builder.Services.AddScoped<IMaterialImpulsoService, MaterialImpulsoService>();
+builder.Services.AddScoped<ISupervisorPanelService, SupervisorPanelService>();
 builder.Services.AddScoped<FormularioDbSeeder>();
 builder.Services.AddScoped<FormularioDataMigrationService>();
 builder.Services.AddSingleton(TimeProvider.System);

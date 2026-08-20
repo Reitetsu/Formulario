@@ -46,9 +46,10 @@ export class MaterialesImpulsoService {
     );
   }
 
-  getPhotos(materialImpulsoTiendaId: number): Observable<FotoMaterialResumen[]> {
+  getPhotos(materialImpulsoTiendaId: number, soloHoy = false): Observable<FotoMaterialResumen[]> {
     return this.http.get<FotoMaterialResumen[]>(
-      `${this.endpoint}/${materialImpulsoTiendaId}/fotos`
+      `${this.endpoint}/${materialImpulsoTiendaId}/fotos`,
+      { params: { soloHoy } }
     );
   }
 

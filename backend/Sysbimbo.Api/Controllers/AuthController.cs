@@ -4,7 +4,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Sysbimbo.Api.Data;
 using Sysbimbo.Api.DTOs.Auth;
+using Sysbimbo.Api.Models.Entities;
 using Sysbimbo.Api.Models.Identity;
 
 namespace Sysbimbo.Api.Controllers;
@@ -13,6 +16,7 @@ namespace Sysbimbo.Api.Controllers;
 [Route("api/auth")]
 public sealed class AuthController(
     UserManager<ApplicationUser> userManager,
+    FormularioDbContext dbContext,
     TimeProvider timeProvider) : ControllerBase
 {
     private const string SessionExpirationClaim = "session_expires_utc";
@@ -20,7 +24,8 @@ public sealed class AuthController(
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<AuthenticatedUserDto>> LoginAsync(
-        [FromBody] LoginRequest request)
+        [FromBody] LoginRequest request,
+        CancellationToken cancellationToken)
     {
         var userName = request.Usuario?.Trim();
         if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(request.Password))
@@ -41,6 +46,7 @@ public sealed class AuthController(
         }
 
         await userManager.ResetAccessFailedCountAsync(user);
+        await OpenAttendanceAsync(user.Id, cancellationToken);
         var roles = (await userManager.GetRolesAsync(user)).ToArray();
         var expiration = GetNextLimaMidnight();
         var claims = new List<Claim>
@@ -92,10 +98,97 @@ public sealed class AuthController(
 
     [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> LogoutAsync()
+    public async Task<IActionResult> LogoutAsync(CancellationToken cancellationToken)
     {
+        if (Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            await CloseAttendanceAsync(userId, "MANUAL", cancellationToken);
+        }
+
         await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
         return NoContent();
+    }
+
+    private async Task OpenAttendanceAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var businessDate = GetCurrentLimaDate();
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var previousOpenAttendances = await dbContext.JornadasUsuarios
+            .Where(item => item.UsuarioId == userId &&
+                           item.FormularioId == FormularioSeedCatalog.ControlMaterialFormularioId &&
+                           item.FechaJornada < businessDate &&
+                           item.Estado == "ABIERTA")
+            .ToArrayAsync(cancellationToken);
+
+        foreach (var previous in previousOpenAttendances)
+        {
+            previous.HoraSalida = GetLimaMidnightUtc(previous.FechaJornada.AddDays(1));
+            previous.Estado = "CERRADA";
+            previous.TipoCierre = "AUTOMATICO";
+        }
+
+        var attendance = await dbContext.JornadasUsuarios.SingleOrDefaultAsync(
+            item => item.UsuarioId == userId &&
+                    item.FormularioId == FormularioSeedCatalog.ControlMaterialFormularioId &&
+                    item.FechaJornada == businessDate,
+            cancellationToken);
+        if (attendance is null)
+        {
+            var assignedStoreKeys = await dbContext.UsuariosTiendas
+                .AsNoTracking()
+                .Where(item => item.UsuarioId == userId &&
+                               item.Activo &&
+                               item.FechaInicio <= businessDate &&
+                               (item.FechaFin == null || item.FechaFin >= businessDate))
+                .Select(item => item.TiendaCadenaKey)
+                .Take(2)
+                .ToArrayAsync(cancellationToken);
+            var userAgent = Request.Headers.UserAgent.ToString();
+
+            attendance = new JornadaUsuario
+            {
+                UsuarioId = userId,
+                ClienteId = FormularioSeedCatalog.BimboClienteId,
+                FormularioId = FormularioSeedCatalog.ControlMaterialFormularioId,
+                TiendaCadenaKey = assignedStoreKeys.Length == 1 ? assignedStoreKeys[0] : null,
+                FechaJornada = businessDate,
+                HoraIngreso = now,
+                Estado = "ABIERTA",
+                DireccionIp = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Dispositivo = userAgent.Length <= 500 ? userAgent : userAgent[..500]
+            };
+            dbContext.JornadasUsuarios.Add(attendance);
+        }
+        else if (attendance.Estado != "ABIERTA")
+        {
+            attendance.HoraSalida = null;
+            attendance.Estado = "ABIERTA";
+            attendance.TipoCierre = null;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task CloseAttendanceAsync(
+        Guid userId,
+        string closeType,
+        CancellationToken cancellationToken)
+    {
+        var businessDate = GetCurrentLimaDate();
+        var attendance = await dbContext.JornadasUsuarios.SingleOrDefaultAsync(
+            item => item.UsuarioId == userId &&
+                    item.FormularioId == FormularioSeedCatalog.ControlMaterialFormularioId &&
+                    item.FechaJornada == businessDate,
+            cancellationToken);
+        if (attendance is null)
+        {
+            return;
+        }
+
+        attendance.HoraSalida = timeProvider.GetUtcNow().UtcDateTime;
+        attendance.Estado = "CERRADA";
+        attendance.TipoCierre = closeType;
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private DateTimeOffset GetNextLimaMidnight()
@@ -111,6 +204,18 @@ public sealed class AuthController(
             0,
             DateTimeKind.Unspecified).AddDays(1);
         return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(nextLocalMidnight, timeZone));
+    }
+
+    private DateOnly GetCurrentLimaDate()
+    {
+        var localNow = TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), GetLimaTimeZone());
+        return DateOnly.FromDateTime(localNow.DateTime);
+    }
+
+    private static DateTime GetLimaMidnightUtc(DateOnly date)
+    {
+        var localMidnight = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+        return TimeZoneInfo.ConvertTimeToUtc(localMidnight, GetLimaTimeZone());
     }
 
     private static TimeZoneInfo GetLimaTimeZone()

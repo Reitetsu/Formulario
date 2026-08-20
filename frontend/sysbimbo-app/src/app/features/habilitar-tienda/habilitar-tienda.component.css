@@ -58,7 +58,7 @@
   outline: none;
 }
 
-.login-access > span::before {
+.user-symbol::before {
   border: 1px solid currentColor;
   border-radius: 50%;
   content: '';
@@ -69,7 +69,7 @@
   width: 0.55rem;
 }
 
-.login-access > span::after {
+.user-symbol::after {
   border: 1px solid currentColor;
   border-radius: 50% 50% 35% 35%;
   bottom: 0.45rem;
@@ -78,6 +78,45 @@
   left: 0.65rem;
   position: absolute;
   width: 1.25rem;
+}
+
+.login-access--authenticated {
+  border-radius: 999px;
+  gap: 0.55rem;
+  max-width: min(240px, 45vw);
+  padding: 0.35rem 0.8rem 0.35rem 2.8rem;
+  text-decoration: none;
+  width: auto;
+}
+
+.login-access--authenticated .user-symbol::before {
+  left: 1rem;
+}
+
+.login-access--authenticated .user-symbol::after {
+  left: 0.65rem;
+}
+
+.session-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.session-copy small {
+  color: var(--muted);
+  font-size: 0.52rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.session-copy strong {
+  color: var(--text);
+  font-size: 0.68rem;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brand-seal,
@@ -365,6 +404,80 @@ select:focus,
 .capture-actions .photo-button {
   justify-content: center;
   white-space: nowrap;
+}
+
+.canjes-editor {
+  align-items: end;
+  background: rgba(201, 164, 83, 0.05);
+  border: 1px solid rgba(201, 164, 83, 0.18);
+  border-radius: 9px;
+  display: grid;
+  gap: 0.7rem;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  padding: 0.8rem;
+}
+
+.canjes-editor label {
+  color: var(--gold-light);
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+}
+
+.canjes-editor p {
+  color: var(--muted);
+  font-size: 0.64rem;
+  margin-bottom: 0;
+}
+
+.canjes-editor input {
+  appearance: textfield;
+  background: #090908;
+  border: 1px solid #4a4437;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  min-height: 2.7rem;
+  min-width: 0;
+  padding: 0 0.75rem;
+  width: 100%;
+}
+
+.canjes-editor input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 164, 83, 0.09);
+  outline: none;
+}
+
+.save-canjes-button {
+  background: transparent;
+  border: 1px solid #8d7139;
+  border-radius: 8px;
+  color: var(--gold-light);
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-height: 2.7rem;
+  padding: 0 1rem;
+}
+
+.save-canjes-button:disabled {
+  border-color: #403c33;
+  color: #68635a;
+}
+
+.canjes-feedback {
+  color: #a8c8a2;
+  font-size: 0.68rem;
+  grid-column: 1 / -1;
+  margin-top: -0.2rem;
+  padding: 0 0.2rem;
+}
+
+.canjes-feedback--error {
+  color: #db9d94;
 }
 
 .photo-input {
@@ -875,5 +988,18 @@ footer {
   .camera-controls > button {
     flex: 1 1 0;
     justify-content: center;
+  }
+
+  .canjes-editor {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .canjes-editor > div {
+    grid-column: 1 / -1;
+  }
+
+  .save-canjes-button {
+    padding-inline: 0.75rem;
   }
 }

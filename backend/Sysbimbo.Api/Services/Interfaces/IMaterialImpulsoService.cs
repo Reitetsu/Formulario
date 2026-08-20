@@ -24,6 +24,11 @@ public interface IMaterialImpulsoService
     Task<IReadOnlyList<MaterialImpulsoTiendaDto>> GetByTiendaAsync(
         string tiendaCadenaKey,
         CancellationToken cancellationToken);
+    Task<CanjesDiariosDto> UpdateDailyExchangesAsync(
+        long materialImpulsoTiendaId,
+        int cantidad,
+        Guid usuarioId,
+        CancellationToken cancellationToken);
     Task<FotoMaterialImpulsoDto> SavePhotoAsync(
         long materialImpulsoTiendaId,
         IFormFile foto,

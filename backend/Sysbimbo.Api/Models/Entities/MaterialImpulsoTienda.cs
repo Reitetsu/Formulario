@@ -25,4 +25,5 @@ public class MaterialImpulsoTienda
     public DateTime FechaCreacion { get; set; }
 
     public ICollection<FotoMaterialImpulso> Fotos { get; set; } = [];
+    public ICollection<CanjeMaterialDiario> CanjesDiarios { get; set; } = [];
 }

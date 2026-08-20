@@ -5,6 +5,20 @@ export interface MaterialImpulsoTienda {
   descripcion: string | null;
   cuotaDiaria: number;
   acumulado: number;
+  canjesHoy: number;
+}
+
+export interface CanjesDiariosResult {
+  canjeMaterialDiarioId: number;
+  materialImpulsoTiendaId: number;
+  tiendaCadenaKey: string;
+  fecha: string;
+  cantidad: number;
+  formaIngreso: 'MANUAL' | string;
+  registradoPorUsuarioId: string;
+  actualizadoPorUsuarioId: string | null;
+  fechaCreacion: string;
+  fechaActualizacion: string;
 }
 
 export interface FotoMaterialImpulsoResult {

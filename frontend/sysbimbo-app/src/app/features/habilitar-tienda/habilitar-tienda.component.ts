@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, DestroyRef, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
   catchError,
@@ -19,7 +19,9 @@ import {
   tap
 } from 'rxjs';
 import { MaterialImpulsoTienda } from '../../core/models/material-impulso.model';
+import { AuthUser } from '../../core/models/auth-user.model';
 import { Tienda } from '../../core/models/tienda.model';
+import { AuthService } from '../../core/services/auth.service';
 import { MaterialesImpulsoService } from '../../core/services/materiales-impulso.service';
 import { TiendasService } from '../../core/services/tiendas.service';
 
@@ -37,11 +39,16 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly tiendasService = inject(TiendasService);
   private readonly materialesService = inject(MaterialesImpulsoService);
+  private readonly authService = inject(AuthService);
 
   protected readonly marcas = ['TOTTUS', 'METRO', 'MAKRO', 'PLAZA VEA'];
   protected readonly marcaControl = new FormControl('', { nonNullable: true });
   protected readonly tiendaSearch = new FormControl('', { nonNullable: true });
+  protected readonly canjesControl = new FormControl<number | null>(null, {
+    validators: [Validators.required, Validators.min(0), Validators.max(1_000_000)]
+  });
 
+  protected currentUser: AuthUser | null = null;
   protected suggestions: Tienda[] = [];
   protected selectedTienda: Tienda | null = null;
   protected materials: MaterialImpulsoTienda[] = [];
@@ -60,9 +67,22 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
   protected cameraOpen = false;
   protected cameraStarting = false;
   protected cameraError = '';
+  protected savingCanjes = false;
+  protected canjesMessage = '';
+  protected canjesError = '';
   private cameraStream: MediaStream | null = null;
 
   ngOnInit(): void {
+    this.authService.getSession()
+      .pipe(
+        catchError(() => of(null)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(user => {
+        this.currentUser = user;
+        this.cdr.markForCheck();
+      });
+
     this.marcaControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.resetStore());
@@ -138,6 +158,7 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
     this.materialSearched = false;
     this.photoMessage = '';
     this.photoError = '';
+    this.resetDailyExchanges();
     this.tiendaSearch.setValue(this.storeLabel(tienda), { emitEvent: false });
     this.dropdownOpen = false;
     this.cdr.markForCheck();
@@ -154,6 +175,7 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
     this.photoMessage = '';
     this.photoError = '';
     this.cameraError = '';
+    this.resetDailyExchanges();
     if (this.photoPreviewUrl) {
       URL.revokeObjectURL(this.photoPreviewUrl);
       this.photoPreviewUrl = '';
@@ -185,6 +207,7 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
         next: (materials) => {
           this.materials = materials ?? [];
           this.material = this.materials.length === 1 ? this.materials[0] : null;
+          this.syncDailyExchanges();
           this.materialSearched = true;
           this.cdr.markForCheck();
           this.scrollToMaterial();
@@ -212,6 +235,7 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
     this.photoMessage = '';
     this.photoError = '';
     this.cameraError = '';
+    this.syncDailyExchanges();
 
     if (this.photoPreviewUrl) {
       URL.revokeObjectURL(this.photoPreviewUrl);
@@ -265,6 +289,52 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
       this.cameraStarting = false;
       this.cdr.markForCheck();
     }
+  }
+
+  protected get canManageCanjes(): boolean {
+    return this.currentUser?.roles.some(
+      role => role === 'Administrador' || role === 'Supervisor'
+    ) ?? false;
+  }
+
+  protected saveDailyExchanges(): void {
+    if (!this.material || !this.canManageCanjes || this.canjesControl.invalid || this.savingCanjes) {
+      this.canjesControl.markAsTouched();
+      return;
+    }
+
+    const cantidad = this.canjesControl.value;
+    if (cantidad === null) return;
+
+    const materialId = this.material.materialImpulsoTiendaId;
+    this.savingCanjes = true;
+    this.canjesMessage = '';
+    this.canjesError = '';
+    this.materialesService.updateDailyExchanges(materialId, cantidad)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.savingCanjes = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: result => {
+          this.materials = this.materials.map(item =>
+            item.materialImpulsoTiendaId === materialId
+              ? { ...item, canjesHoy: result.cantidad }
+              : item
+          );
+          if (this.material?.materialImpulsoTiendaId === materialId) {
+            this.material = { ...this.material, canjesHoy: result.cantidad };
+          }
+          this.canjesControl.setValue(result.cantidad);
+          this.canjesMessage = `Total diario actualizado: ${result.cantidad} canjes.`;
+        },
+        error: (error: unknown) => {
+          this.canjesError = this.errorMessage(error, 'No fue posible guardar el total de canjes.');
+        }
+      });
   }
 
   protected captureCameraPhoto(): void {
@@ -406,9 +476,23 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
     this.photoMessage = '';
     this.photoError = '';
     this.loadError = '';
+    this.resetDailyExchanges();
     this.tiendaSearch.setValue('');
     this.closeCamera();
     this.cdr.markForCheck();
+  }
+
+  private syncDailyExchanges(): void {
+    this.canjesControl.setValue(this.material?.canjesHoy ?? null);
+    this.canjesMessage = '';
+    this.canjesError = '';
+  }
+
+  private resetDailyExchanges(): void {
+    this.canjesControl.setValue(null);
+    this.canjesMessage = '';
+    this.canjesError = '';
+    this.savingCanjes = false;
   }
 
   private stopCameraStream(): void {

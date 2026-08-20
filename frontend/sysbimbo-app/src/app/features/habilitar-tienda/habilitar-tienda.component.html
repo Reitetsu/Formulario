@@ -6,14 +6,29 @@
         <span class="eyebrow">Registro de impulso</span>
         <h1>Control de material</h1>
       </div>
-      <a
-        class="login-access"
-        routerLink="/supervisores"
-        aria-label="Iniciar sesión"
-        title="Iniciar sesión"
-      >
-        <span aria-hidden="true"></span>
-      </a>
+      @if (currentUser) {
+        <a
+          class="login-access login-access--authenticated"
+          routerLink="/supervisores"
+          aria-label="Ir al panel de supervisores"
+          title="Ir al panel de supervisores"
+        >
+          <span class="user-symbol" aria-hidden="true"></span>
+          <span class="session-copy">
+            <small>Sesión</small>
+            <strong>{{ currentUser.nombreCompleto || currentUser.nombreUsuario }}</strong>
+          </span>
+        </a>
+      } @else {
+        <a
+          class="login-access"
+          routerLink="/supervisores"
+          aria-label="Iniciar sesión"
+          title="Iniciar sesión"
+        >
+          <span class="user-symbol" aria-hidden="true"></span>
+        </a>
+      }
     </header>
 
     <div class="steps" aria-label="Progreso del formulario">
@@ -164,9 +179,9 @@
             </div>
 
             <div class="counter-card">
-              <small>Acumulado de hoy</small>
-              <strong>{{ material.acumulado }}</strong>
-              <span>evidencias</span>
+              <small>Canjes de hoy</small>
+              <strong>{{ material.canjesHoy }}</strong>
+              <span>registrados</span>
             </div>
 
             <div class="counter-card objective-card">
@@ -200,7 +215,7 @@
 
               <div class="capture-copy">
                 <h3>Registra la evidencia</h3>
-                <p>Toma una foto o selecciona varias; cada imagen registra una entrega.</p>
+                <p>Toma una foto o selecciona varias. Evidencias de hoy: {{ material.acumulado }}.</p>
               </div>
 
               <div class="capture-actions">
@@ -227,6 +242,47 @@
                   Subir fotos
                 </button>
               </div>
+
+              @if (canManageCanjes) {
+                <div class="canjes-editor">
+                  <div>
+                    <label for="canjes-hoy">Total de canjes realizados hoy</label>
+                    <p>Ingreso manual por {{ currentUser?.nombreCompleto || currentUser?.nombreUsuario }}.</p>
+                  </div>
+                  <input
+                    id="canjes-hoy"
+                    type="number"
+                    min="0"
+                    max="1000000"
+                    step="1"
+                    inputmode="numeric"
+                    [formControl]="canjesControl"
+                    [readonly]="savingCanjes"
+                  >
+                  <button
+                    type="button"
+                    class="save-canjes-button"
+                    [disabled]="canjesControl.invalid || savingCanjes"
+                    (click)="saveDailyExchanges()"
+                  >
+                    {{ savingCanjes ? 'Guardando...' : 'Guardar total' }}
+                  </button>
+                </div>
+
+                @if (canjesControl.touched && canjesControl.invalid) {
+                  <div class="canjes-feedback canjes-feedback--error" role="alert">
+                    Ingresa una cantidad válida desde cero.
+                  </div>
+                }
+
+                @if (canjesMessage) {
+                  <div class="canjes-feedback" role="status">{{ canjesMessage }}</div>
+                }
+
+                @if (canjesError) {
+                  <div class="canjes-feedback canjes-feedback--error" role="alert">{{ canjesError }}</div>
+                }
+              }
             </div>
           }
 

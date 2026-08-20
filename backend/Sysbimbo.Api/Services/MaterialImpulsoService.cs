@@ -181,6 +181,7 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
     {
         var key = NormalizeStoreKey(tiendaCadenaKey);
         var (dayStartUtc, dayEndUtc) = GetCurrentBusinessDayUtcRange();
+        var businessDate = GetCurrentBusinessDate();
 
         return await dbContext.MaterialesImpulsoTienda
             .AsNoTracking()
@@ -195,9 +196,78 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
                 CuotaDiaria = x.CuotaDiaria,
                 Acumulado = x.Fotos.Count(foto =>
                     foto.FechaCaptura >= dayStartUtc &&
-                    foto.FechaCaptura < dayEndUtc)
+                    foto.FechaCaptura < dayEndUtc),
+                CanjesHoy = x.CanjesDiarios
+                    .Where(canje => canje.Fecha == businessDate)
+                    .Select(canje => (int?)canje.Cantidad)
+                    .FirstOrDefault() ?? 0
             })
             .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<CanjesDiariosDto> UpdateDailyExchangesAsync(
+        long materialImpulsoTiendaId,
+        int cantidad,
+        Guid usuarioId,
+        CancellationToken cancellationToken)
+    {
+        if (cantidad is < 0 or > 1_000_000)
+        {
+            throw new InvalidOperationException("La cantidad debe estar entre 0 y 1000000.");
+        }
+
+        var material = await dbContext.MaterialesImpulsoTienda
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                item => item.MaterialImpulsoTiendaId == materialImpulsoTiendaId && item.Activo,
+                cancellationToken)
+            ?? throw new KeyNotFoundException("No se encontro el material activo de la tienda.");
+
+        var businessDate = GetCurrentBusinessDate();
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var entry = await dbContext.CanjesMaterialDiarios
+            .SingleOrDefaultAsync(
+                item => item.MaterialImpulsoTiendaId == materialImpulsoTiendaId &&
+                        item.Fecha == businessDate,
+                cancellationToken);
+
+        if (entry is null)
+        {
+            entry = new CanjeMaterialDiario
+            {
+                MaterialImpulsoTiendaId = material.MaterialImpulsoTiendaId,
+                TiendaCadenaKey = material.TiendaCadenaKey,
+                Fecha = businessDate,
+                Cantidad = cantidad,
+                FormaIngreso = "MANUAL",
+                RegistradoPorUsuarioId = usuarioId,
+                FechaCreacion = now,
+                FechaActualizacion = now
+            };
+            dbContext.CanjesMaterialDiarios.Add(entry);
+        }
+        else
+        {
+            entry.Cantidad = cantidad;
+            entry.FormaIngreso = "MANUAL";
+            entry.ActualizadoPorUsuarioId = usuarioId;
+            entry.FechaActualizacion = now;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return new CanjesDiariosDto
+        {
+            CanjeMaterialDiarioId = entry.CanjeMaterialDiarioId,
+            MaterialImpulsoTiendaId = entry.MaterialImpulsoTiendaId,
+            TiendaCadenaKey = entry.TiendaCadenaKey,
+            Fecha = entry.Fecha,
+            Cantidad = entry.Cantidad,
+            FormaIngreso = entry.FormaIngreso,
+            RegistradoPorUsuarioId = entry.RegistradoPorUsuarioId,
+            ActualizadoPorUsuarioId = entry.ActualizadoPorUsuarioId,
+            FechaCreacion = entry.FechaCreacion,
+            FechaActualizacion = entry.FechaActualizacion
+        };
     }
 
     public async Task<FotoMaterialImpulsoDto> SavePhotoAsync(
@@ -340,14 +410,19 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
 
     private (DateTime DayStartUtc, DateTime DayEndUtc) GetCurrentBusinessDayUtcRange()
     {
-        var businessNow = TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), BusinessTimeZone);
-        var businessDate = DateOnly.FromDateTime(businessNow.DateTime);
+        var businessDate = GetCurrentBusinessDate();
         var localDayStart = businessDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
         var localDayEnd = businessDate.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
 
         return (
             TimeZoneInfo.ConvertTimeToUtc(localDayStart, BusinessTimeZone),
             TimeZoneInfo.ConvertTimeToUtc(localDayEnd, BusinessTimeZone));
+    }
+
+    private DateOnly GetCurrentBusinessDate()
+    {
+        var businessNow = TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), BusinessTimeZone);
+        return DateOnly.FromDateTime(businessNow.DateTime);
     }
 
     private static TimeZoneInfo ResolveBusinessTimeZone()

@@ -10,6 +10,27 @@ public class MaterialImpulsoTiendaDto
     public string? Descripcion { get; init; }
     public int CuotaDiaria { get; init; }
     public int Acumulado { get; init; }
+    public int CanjesHoy { get; init; }
+}
+
+public class UpdateCanjesDiariosDto
+{
+    [Range(0, 1_000_000, ErrorMessage = "La cantidad debe estar entre 0 y 1000000.")]
+    public int Cantidad { get; init; }
+}
+
+public class CanjesDiariosDto
+{
+    public long CanjeMaterialDiarioId { get; init; }
+    public long MaterialImpulsoTiendaId { get; init; }
+    public string TiendaCadenaKey { get; init; } = string.Empty;
+    public DateOnly Fecha { get; init; }
+    public int Cantidad { get; init; }
+    public string FormaIngreso { get; init; } = string.Empty;
+    public Guid RegistradoPorUsuarioId { get; init; }
+    public Guid? ActualizadoPorUsuarioId { get; init; }
+    public DateTime FechaCreacion { get; init; }
+    public DateTime FechaActualizacion { get; init; }
 }
 
 public class FotoMaterialImpulsoDto

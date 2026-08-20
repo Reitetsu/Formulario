@@ -16,6 +16,7 @@ public class FormularioDbContext(DbContextOptions<FormularioDbContext> options)
     public DbSet<DimTiendaMaestraExport> Tiendas => Set<DimTiendaMaestraExport>();
     public DbSet<MaterialImpulsoTienda> MaterialesImpulsoTienda => Set<MaterialImpulsoTienda>();
     public DbSet<FotoMaterialImpulso> FotosMaterialImpulso => Set<FotoMaterialImpulso>();
+    public DbSet<CanjeMaterialDiario> CanjesMaterialDiarios => Set<CanjeMaterialDiario>();
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Formulario> Formularios => Set<Formulario>();
     public DbSet<FormularioOpcion> FormularioOpciones => Set<FormularioOpcion>();
@@ -156,6 +157,65 @@ public class FormularioDbContext(DbContextOptions<FormularioDbContext> options)
                 .HasConstraintName("fk_fotos_material");
             entity.HasIndex(x => new { x.MaterialImpulsoTiendaId, x.FechaCaptura })
                 .HasDatabaseName("ix_fotos_material_fecha");
+        });
+
+        modelBuilder.Entity<CanjeMaterialDiario>(entity =>
+        {
+            entity.ToTable("canjes_material_diarios", table =>
+                table.HasCheckConstraint(
+                    "ck_canjes_material_diarios_cantidad",
+                    "cantidad >= 0"));
+            entity.HasKey(x => x.CanjeMaterialDiarioId)
+                .HasName("pk_canjes_material_diarios");
+            entity.Property(x => x.CanjeMaterialDiarioId)
+                .HasColumnName("canje_material_diario_id")
+                .ValueGeneratedOnAdd();
+            entity.Property(x => x.MaterialImpulsoTiendaId)
+                .HasColumnName("material_impulso_tienda_id");
+            entity.Property(x => x.TiendaCadenaKey)
+                .HasColumnName("tienda_cadena_key")
+                .HasMaxLength(450);
+            entity.Property(x => x.Fecha)
+                .HasColumnName("fecha")
+                .HasColumnType("date");
+            entity.Property(x => x.Cantidad)
+                .HasColumnName("cantidad");
+            entity.Property(x => x.FormaIngreso)
+                .HasColumnName("forma_ingreso")
+                .HasMaxLength(20);
+            entity.Property(x => x.RegistradoPorUsuarioId)
+                .HasColumnName("registrado_por_usuario_id");
+            entity.Property(x => x.ActualizadoPorUsuarioId)
+                .HasColumnName("actualizado_por_usuario_id");
+            entity.Property(x => x.FechaCreacion)
+                .HasColumnName("fecha_creacion")
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(x => x.FechaActualizacion)
+                .HasColumnName("fecha_actualizacion")
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(x => x.MaterialImpulsoTienda)
+                .WithMany(x => x.CanjesDiarios)
+                .HasForeignKey(x => x.MaterialImpulsoTiendaId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_canjes_material");
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.RegistradoPorUsuarioId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_canjes_usuario_registro");
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.ActualizadoPorUsuarioId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_canjes_usuario_actualizacion");
+            entity.HasIndex(x => new { x.MaterialImpulsoTiendaId, x.Fecha })
+                .IsUnique()
+                .HasDatabaseName("ux_canjes_material_fecha");
+            entity.HasIndex(x => new { x.TiendaCadenaKey, x.Fecha })
+                .HasDatabaseName("ix_canjes_tienda_fecha");
         });
 
         modelBuilder.ConfigureControlOperativo();

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import {
   CreateMaterialImpulsoPayload,
+  CanjesDiariosResult,
   FotoMaterialImpulsoResult,
   FotoMaterialResumen,
   MaterialImpulsoAdmin,
@@ -31,6 +32,17 @@ export class MaterialesImpulsoService {
     return this.http.post<FotoMaterialImpulsoResult>(
       `${this.endpoint}/${materialImpulsoTiendaId}/fotos`,
       body
+    );
+  }
+
+  updateDailyExchanges(
+    materialImpulsoTiendaId: number,
+    cantidad: number
+  ): Observable<CanjesDiariosResult> {
+    return this.http.put<CanjesDiariosResult>(
+      `${this.endpoint}/${materialImpulsoTiendaId}/canjes-hoy`,
+      { cantidad },
+      { withCredentials: true }
     );
   }
 

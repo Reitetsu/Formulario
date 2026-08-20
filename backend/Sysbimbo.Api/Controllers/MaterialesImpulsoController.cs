@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sysbimbo.Api.DTOs.MaterialesImpulso;
 using Sysbimbo.Api.Services.Interfaces;
@@ -110,6 +112,25 @@ public class MaterialesImpulsoController(IMaterialImpulsoService materialImpulso
     {
         var result = await materialImpulsoService.GetByTiendaAsync(tiendaCadenaKey, cancellationToken);
         return Ok(result);
+    }
+
+    [Authorize(Roles = "Administrador,Supervisor")]
+    [HttpPut("{materialImpulsoTiendaId:long}/canjes-hoy")]
+    public async Task<ActionResult<CanjesDiariosDto>> UpdateDailyExchangesAsync(
+        long materialImpulsoTiendaId,
+        [FromBody] UpdateCanjesDiariosDto dto,
+        CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId))
+        {
+            return Unauthorized(new { message = "La sesion no contiene un usuario valido." });
+        }
+
+        return Ok(await materialImpulsoService.UpdateDailyExchangesAsync(
+            materialImpulsoTiendaId,
+            dto.Cantidad,
+            usuarioId,
+            cancellationToken));
     }
 
     [HttpPost("{materialImpulsoTiendaId:long}/fotos")]

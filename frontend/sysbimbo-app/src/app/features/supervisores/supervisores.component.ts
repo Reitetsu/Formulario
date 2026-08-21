@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { FotoMaterialResumen } from '../../core/models/material-impulso.model';
@@ -24,6 +24,7 @@ export class SupervisoresComponent implements OnInit {
   private readonly panelService = inject(SupervisorPanelService);
   private readonly materialsService = inject(MaterialesImpulsoService);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected readonly user$ = this.authService.currentUser$;
   protected loggingOut = false;
@@ -60,10 +61,12 @@ export class SupervisoresComponent implements OnInit {
         }
         this.resetAttendanceDraft();
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.errorMessage = 'No fue posible cargar la información del supervisor.';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -90,10 +93,12 @@ export class SupervisoresComponent implements OnInit {
         this.editingAttendance = false;
         this.savingAttendance = false;
         this.resetAttendanceDraft();
+        this.cdr.markForCheck();
       },
       error: error => {
         this.errorMessage = error?.error?.message ?? 'No fue posible actualizar la asistencia.';
         this.savingAttendance = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -112,10 +117,12 @@ export class SupervisoresComponent implements OnInit {
         store.totalCanjesHoy = store.materiales.reduce((total, item) => total + item.canjesHoy, 0);
         this.materialMessage = `${material.nombreMaterial}: canjes actualizados.`;
         this.savingMaterialId = null;
+        this.cdr.markForCheck();
       },
       error: error => {
         this.materialMessage = error?.error?.message ?? 'No fue posible actualizar los canjes.';
         this.savingMaterialId = null;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -131,10 +138,12 @@ export class SupervisoresComponent implements OnInit {
       next: photos => {
         this.galleryPhotos = photos;
         this.galleryLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.galleryError = 'No fue posible cargar las fotografías.';
         this.galleryLoading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -193,6 +202,7 @@ export class SupervisoresComponent implements OnInit {
       next: () => this.router.navigate(['/canjes_Agosto']),
       error: () => {
         this.loggingOut = false;
+        this.cdr.markForCheck();
       }
     });
   }

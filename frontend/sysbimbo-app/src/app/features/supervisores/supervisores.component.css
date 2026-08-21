@@ -16,6 +16,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .page-header, .section-heading, .store-header, .gallery-header { justify-content: space-between; }
 .page-header { gap: 1rem; margin-bottom: 2rem; }
 .identity, .welcome-card, .material-name { gap: 1rem; }
+.header-actions { display: flex; gap: .5rem; }
+.header-form-link { align-items: center; display: inline-flex; text-decoration: none; }
 
 .brand-seal, .material-seal {
   align-items: center;
@@ -149,11 +151,58 @@ figcaption { font-size: .65rem; padding: .6rem; }
 
 @media (max-width: 430px) {
   .supervisor-page { padding: .35rem; }
+  .page-header {
+    align-items: center;
+    flex-direction: row;
+    gap: .35rem;
+    margin-bottom: .4rem;
+  }
+  .identity { gap: .45rem; min-width: 0; }
+  .brand-seal { font-size: .65rem; height: 2rem; width: 2rem; }
+  .identity .eyebrow { font-size: .4rem; letter-spacing: .14em; }
+  .identity h1 { font-size: .95rem; line-height: 1.05; white-space: nowrap; }
+  .header-actions { gap: .25rem; margin-left: auto; }
+  .header-actions .outline-button {
+    font-size: .52rem;
+    min-height: 2rem;
+    padding: 0 .45rem;
+  }
+  .welcome-card {
+    border-radius: 8px;
+    margin-bottom: .4rem;
+    padding: .4rem .55rem;
+  }
+  .welcome-card .user-icon,
+  .welcome-card small { display: none; }
+  .welcome-card > div { align-items: center; display: flex; gap: .4rem; }
+  .welcome-card h2 { font-size: .72rem; margin: 0; }
+  .welcome-card p { font-size: .5rem; }
+  .attendance-card {
+    border-radius: 8px;
+    margin-bottom: .5rem;
+    padding: .5rem .55rem;
+  }
+  .attendance-card .section-heading .eyebrow { font-size: .44rem; }
+  .attendance-card .section-heading h2 { font-size: .9rem; margin-top: .2rem; }
+  .attendance-card .section-heading p { font-size: .5rem; margin-top: .15rem; }
+  .attendance-card .section-heading .compact {
+    font-size: .52rem;
+    min-height: 2rem;
+    padding: 0 .55rem;
+  }
   .stores-heading { margin: .4rem .2rem .55rem; }
   .stores-heading h2 { font-size: 1.05rem; margin-top: .2rem; }
   .store-count { font-size: .6rem; }
-  .attendance-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .attendance-summary > div:last-child { grid-column: 1 / -1; }
+  .attendance-summary {
+    gap: .3rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: .45rem;
+  }
+  .attendance-summary > div { border-radius: 6px; padding: .4rem .45rem; }
+  .attendance-summary > div:last-child { grid-column: auto; }
+  .attendance-summary small { font-size: .48rem; }
+  .attendance-summary strong { font-size: .66rem; margin-top: .15rem; }
+  .attendance-summary .status-pill { font-size: .56rem !important; }
   .attendance-form { grid-template-columns: 1fr; }
   .form-actions { grid-column: auto; }
   .store-card { border-radius: 9px; margin-bottom: .4rem; }

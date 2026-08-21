@@ -8,9 +8,12 @@
           <h1>Panel de supervisores</h1>
         </div>
       </div>
-      <button class="outline-button" type="button" (click)="logout()" [disabled]="loggingOut">
-        {{ loggingOut ? 'Cerrando...' : 'Cerrar sesión' }}
-      </button>
+      <div class="header-actions">
+        <a class="outline-button header-form-link" routerLink="/canjes_Agosto">Formulario</a>
+        <button class="outline-button" type="button" (click)="logout()" [disabled]="loggingOut">
+          {{ loggingOut ? 'Cerrando...' : 'Salir' }}
+        </button>
+      </div>
     </header>
 
     @if (user$ | async; as user) {
@@ -96,7 +99,6 @@
       </section>
     }
 
-    <a class="form-link" routerLink="/canjes_Agosto">Ir al formulario de canjes</a>
   </section>
 
   @if (galleryOpen) {

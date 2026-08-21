@@ -30,7 +30,10 @@ public sealed class SupervisorPanelService(
 
         var stores = await dbContext.Tiendas
             .AsNoTracking()
-            .Where(store => assignedStoreKeys.Contains(store.TiendaCadenaKey))
+            .Where(store =>
+                assignedStoreKeys.Contains(store.TiendaCadenaKey) &&
+                dbContext.MaterialesImpulsoTienda.Any(material =>
+                    material.TiendaCadenaKey == store.TiendaCadenaKey && material.Activo))
             .OrderBy(store => store.Formato)
             .ThenBy(store => store.NombreTiendaBimbo ?? store.NombreTienda)
             .Select(store => new

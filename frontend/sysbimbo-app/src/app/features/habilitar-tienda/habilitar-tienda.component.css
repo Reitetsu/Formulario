@@ -1135,4 +1135,114 @@ footer {
     padding: 0.4rem 0.55rem;
   }
 
+  .result-panel {
+    padding: 0.6rem;
+  }
+
+  .material-picker {
+    margin-bottom: 0.55rem;
+  }
+
+  .material-card {
+    gap: 0.35rem;
+    grid-template-columns: minmax(0, 1fr) 4.2rem 4.8rem;
+  }
+
+  .material-info {
+    gap: 0;
+    grid-column: auto;
+    min-width: 0;
+    padding: 0.45rem 0.55rem;
+  }
+
+  .material-icon,
+  .material-info small,
+  .material-info p {
+    display: none;
+  }
+
+  .material-info h3 {
+    font-size: 0.78rem;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .counter-card {
+    border-radius: 8px;
+    gap: 0;
+    min-height: 3.25rem;
+    padding: 0.25rem 0.15rem;
+  }
+
+  .counter-card strong {
+    font-size: 1.25rem;
+    margin: 0.1rem 0;
+  }
+
+  .counter-card small,
+  .counter-card span {
+    font-size: 0.4rem;
+  }
+
+  .capture-area {
+    gap: 0.4rem;
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+    margin-top: 0.55rem;
+    padding: 0.5rem;
+  }
+
+  .capture-area img,
+  .camera-placeholder {
+    height: 2.35rem;
+    width: 2.4rem;
+  }
+
+  .camera-placeholder span {
+    transform: scale(0.75);
+  }
+
+  .capture-copy h3 {
+    font-size: 0.68rem;
+    margin-bottom: 0.08rem;
+  }
+
+  .capture-copy p {
+    font-size: 0.53rem;
+    line-height: 1.25;
+  }
+
+  .capture-actions {
+    gap: 0.4rem;
+  }
+
+  .capture-actions .photo-button {
+    font-size: 0.62rem;
+    min-height: 2.2rem;
+  }
+
+  .canjes-editor {
+    gap: 0.4rem;
+    padding: 0.5rem;
+  }
+
+  .canjes-editor label {
+    font-size: 0.56rem;
+    margin-bottom: 0;
+  }
+
+  .canjes-editor p {
+    display: none;
+  }
+
+  .canjes-editor input,
+  .save-canjes-button {
+    min-height: 2.2rem;
+  }
+
+  .save-canjes-button {
+    font-size: 0.6rem;
+  }
+
 }

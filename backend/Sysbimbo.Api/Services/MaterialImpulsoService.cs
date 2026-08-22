@@ -1,3 +1,4 @@
+using System.Data;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using Sysbimbo.Api.Data;
@@ -273,6 +274,7 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
     public async Task<FotoMaterialImpulsoDto> SavePhotoAsync(
         long materialImpulsoTiendaId,
         IFormFile foto,
+        Guid? usuarioId,
         CancellationToken cancellationToken)
     {
         if (foto.Length == 0)
@@ -299,6 +301,8 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
         await using var memory = new MemoryStream();
         await foto.CopyToAsync(memory, cancellationToken);
 
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var businessDate = GetCurrentBusinessDate();
         var entity = new FotoMaterialImpulso
         {
             MaterialImpulsoTiendaId = material.MaterialImpulsoTiendaId,
@@ -307,11 +311,52 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
             TipoContenido = foto.ContentType,
             TamanoBytes = foto.Length,
             Contenido = memory.ToArray(),
-            FechaCaptura = timeProvider.GetUtcNow().UtcDateTime
+            FechaCaptura = now
         };
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            cancellationToken);
+
+        var dailyExchanges = await dbContext.CanjesMaterialDiarios
+            .SingleOrDefaultAsync(
+                item => item.MaterialImpulsoTiendaId == material.MaterialImpulsoTiendaId &&
+                        item.Fecha == businessDate,
+                cancellationToken);
+
+        if (dailyExchanges is null)
+        {
+            dailyExchanges = new CanjeMaterialDiario
+            {
+                MaterialImpulsoTiendaId = material.MaterialImpulsoTiendaId,
+                TiendaCadenaKey = material.TiendaCadenaKey,
+                Fecha = businessDate,
+                Cantidad = 1,
+                FormaIngreso = "FOTO",
+                RegistradoPorUsuarioId = usuarioId,
+                FechaCreacion = now,
+                FechaActualizacion = now
+            };
+            await dbContext.CanjesMaterialDiarios.AddAsync(dailyExchanges, cancellationToken);
+        }
+        else
+        {
+            if (dailyExchanges.Cantidad >= 1_000_000)
+            {
+                throw new InvalidOperationException("El total diario de canjes alcanzo el limite permitido.");
+            }
+
+            dailyExchanges.Cantidad++;
+            dailyExchanges.FormaIngreso = dailyExchanges.FormaIngreso == "MANUAL"
+                ? "MIXTO"
+                : dailyExchanges.FormaIngreso;
+            dailyExchanges.ActualizadoPorUsuarioId = usuarioId;
+            dailyExchanges.FechaActualizacion = now;
+        }
 
         await dbContext.FotosMaterialImpulso.AddAsync(entity, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         var (dayStartUtc, dayEndUtc) = GetCurrentBusinessDayUtcRange();
         var acumulado = await dbContext.FotosMaterialImpulso
@@ -328,7 +373,8 @@ public class MaterialImpulsoService(FormularioDbContext dbContext, TimeProvider 
             TiendaCadenaKey = entity.TiendaCadenaKey,
             NombreArchivo = entity.NombreArchivo,
             FechaCaptura = entity.FechaCaptura,
-            Acumulado = acumulado
+            Acumulado = acumulado,
+            CanjesHoy = dailyExchanges.Cantidad
         };
     }
 

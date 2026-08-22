@@ -253,7 +253,7 @@ namespace Sysbimbo.Api.Data.Migrations.FormularioPostgres
                         .HasColumnType("bigint")
                         .HasColumnName("material_impulso_tienda_id");
 
-                    b.Property<Guid>("RegistradoPorUsuarioId")
+                    b.Property<Guid?>("RegistradoPorUsuarioId")
                         .HasColumnType("uuid")
                         .HasColumnName("registrado_por_usuario_id");
 
@@ -1411,7 +1411,6 @@ namespace Sysbimbo.Api.Data.Migrations.FormularioPostgres
                         .WithMany()
                         .HasForeignKey("RegistradoPorUsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
                         .HasConstraintName("fk_canjes_usuario_registro");
 
                     b.Navigation("MaterialImpulsoTienda");

@@ -143,9 +143,16 @@ public class MaterialesImpulsoController(IMaterialImpulsoService materialImpulso
         [FromForm] IFormFile foto,
         CancellationToken cancellationToken)
     {
+        var usuarioId = Guid.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out var authenticatedUserId)
+            ? authenticatedUserId
+            : (Guid?)null;
+
         var result = await materialImpulsoService.SavePhotoAsync(
             materialImpulsoTiendaId,
             foto,
+            usuarioId,
             cancellationToken);
 
         return CreatedAtRoute(

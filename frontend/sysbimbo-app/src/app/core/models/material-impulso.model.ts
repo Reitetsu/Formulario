@@ -15,7 +15,7 @@ export interface CanjesDiariosResult {
   fecha: string;
   cantidad: number;
   formaIngreso: 'MANUAL' | string;
-  registradoPorUsuarioId: string;
+  registradoPorUsuarioId: string | null;
   actualizadoPorUsuarioId: string | null;
   fechaCreacion: string;
   fechaActualizacion: string;
@@ -28,6 +28,7 @@ export interface FotoMaterialImpulsoResult {
   nombreArchivo: string;
   fechaCaptura: string;
   acumulado: number;
+  canjesHoy: number;
 }
 
 export interface FotoMaterialResumen {

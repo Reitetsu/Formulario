@@ -18,13 +18,10 @@ public sealed class SupervisorPanelService(
     {
         var businessDate = GetCurrentBusinessDate();
         var (dayStartUtc, dayEndUtc) = GetBusinessDayUtcRange(businessDate);
-        var assignedStoreKeys = await dbContext.UsuariosTiendas
+        var assignedStoreKeys = await dbContext.MaterialesImpulsoTienda
             .AsNoTracking()
-            .Where(item => item.UsuarioId == usuarioId &&
-                           item.Activo &&
-                           item.FechaInicio <= businessDate &&
-                           (item.FechaFin == null || item.FechaFin >= businessDate))
-            .Select(item => item.TiendaCadenaKey)
+            .Where(material => material.Activo)
+            .Select(material => material.TiendaCadenaKey)
             .Distinct()
             .ToArrayAsync(cancellationToken);
 

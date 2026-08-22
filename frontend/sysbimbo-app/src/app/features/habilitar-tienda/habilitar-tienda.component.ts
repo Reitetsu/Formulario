@@ -432,11 +432,16 @@ export class HabilitarTiendaComponent implements OnInit, OnDestroy {
           savedPhotos++;
           this.materials = this.materials.map(item =>
             item.materialImpulsoTiendaId === result.materialImpulsoTiendaId
-              ? { ...item, acumulado: result.acumulado }
+              ? { ...item, acumulado: result.acumulado, canjesHoy: result.canjesHoy }
               : item
           );
           if (this.material?.materialImpulsoTiendaId === result.materialImpulsoTiendaId) {
-            this.material = { ...this.material, acumulado: result.acumulado };
+            this.material = {
+              ...this.material,
+              acumulado: result.acumulado,
+              canjesHoy: result.canjesHoy
+            };
+            this.canjesControl.setValue(result.canjesHoy);
           }
           this.cdr.markForCheck();
         },

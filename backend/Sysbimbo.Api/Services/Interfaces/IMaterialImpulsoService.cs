@@ -32,6 +32,7 @@ public interface IMaterialImpulsoService
     Task<FotoMaterialImpulsoDto> SavePhotoAsync(
         long materialImpulsoTiendaId,
         IFormFile foto,
+        Guid? usuarioId,
         CancellationToken cancellationToken);
     Task<FotoMaterialContenidoDto> GetPhotoAsync(long fotoId, CancellationToken cancellationToken);
     Task<IReadOnlyList<FotoMaterialResumenDto>> GetPhotosAsync(

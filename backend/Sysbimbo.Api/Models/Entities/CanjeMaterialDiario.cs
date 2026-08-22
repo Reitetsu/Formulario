@@ -8,7 +8,7 @@ public class CanjeMaterialDiario
     public DateOnly Fecha { get; set; }
     public int Cantidad { get; set; }
     public string FormaIngreso { get; set; } = "MANUAL";
-    public Guid RegistradoPorUsuarioId { get; set; }
+    public Guid? RegistradoPorUsuarioId { get; set; }
     public Guid? ActualizadoPorUsuarioId { get; set; }
     public DateTime FechaCreacion { get; set; }
     public DateTime FechaActualizacion { get; set; }

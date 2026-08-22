@@ -27,7 +27,7 @@ public class CanjesDiariosDto
     public DateOnly Fecha { get; init; }
     public int Cantidad { get; init; }
     public string FormaIngreso { get; init; } = string.Empty;
-    public Guid RegistradoPorUsuarioId { get; init; }
+    public Guid? RegistradoPorUsuarioId { get; init; }
     public Guid? ActualizadoPorUsuarioId { get; init; }
     public DateTime FechaCreacion { get; init; }
     public DateTime FechaActualizacion { get; init; }
@@ -41,6 +41,7 @@ public class FotoMaterialImpulsoDto
     public string NombreArchivo { get; init; } = string.Empty;
     public DateTime FechaCaptura { get; init; }
     public int Acumulado { get; init; }
+    public int CanjesHoy { get; init; }
 }
 
 public class FotoMaterialContenidoDto

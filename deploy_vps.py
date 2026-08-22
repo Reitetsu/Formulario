@@ -186,7 +186,11 @@ def main():
 
     print("\n=== 6. Ejecutando despliegue remoto en el VPS ===")
     quoted_remote_dir = shlex.quote(REMOTE_DIR)
-    cmd_deploy = f"cd {quoted_remote_dir} && chmod +x deploy-vps.sh && ./deploy-vps.sh {mode}"
+    cmd_deploy = (
+        f"cd {quoted_remote_dir} && "
+        "sed -i 's/\\r$//' deploy-vps.sh && "
+        f"chmod +x deploy-vps.sh && bash ./deploy-vps.sh {mode}"
+    )
     stdin, stdout, stderr = ssh.exec_command(cmd_deploy, get_pty=True)
 
     for line in iter(stdout.readline, ""):
